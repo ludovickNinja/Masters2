@@ -117,34 +117,54 @@
           </div>
         </div>
 
-        <div class="form-row">
-          <label class="field-label" for="fJobBagMessage">Display message on Job Bag picture:</label>
-          <input type="text" id="fJobBagMessage" class="text-input" placeholder="Some message here...">
+        <!-- ===== Detailed view tabs ===== -->
+        <div class="modal-tabs" id="modalTabs">
+          <button type="button" class="modal-tab active" data-tab="tabProductionInstructions">Production Instructions</button>
+          <button type="button" class="modal-tab" data-tab="tabSpecifications">Specifications</button>
+          <button type="button" class="modal-tab" data-tab="tabVendor">Vendor</button>
         </div>
 
-        <div class="form-row">
-          <label class="field-label" for="fBnz">BNZ:</label>
-          <textarea id="fBnz" class="text-area"></textarea>
+        <!-- Tab 1: Production Instructions (the original layout) -->
+        <div class="tab-panel" id="tabProductionInstructions">
+          <div class="form-row">
+            <label class="field-label" for="fJobBagMessage">Display message on Job Bag picture:</label>
+            <input type="text" id="fJobBagMessage" class="text-input" placeholder="Some message here...">
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fBnz">BNZ:</label>
+            <textarea id="fBnz" class="text-area"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fPsx">PSX:</label>
+            <textarea id="fPsx" class="text-area"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fFiveAtWork">5 @ Work:</label>
+            <textarea id="fFiveAtWork" class="text-area"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fKutez">Kutez:</label>
+            <textarea id="fKutez" class="text-area"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fSpecialInfo">Special Info:</label>
+            <textarea id="fSpecialInfo" class="text-area"></textarea>
+          </div>
         </div>
 
-        <div class="form-row">
-          <label class="field-label" for="fPsx">PSX:</label>
-          <textarea id="fPsx" class="text-area"></textarea>
+        <!-- Tab 2: Specifications (to be defined) -->
+        <div class="tab-panel" id="tabSpecifications" hidden>
+          <p class="tab-placeholder">Specifications &mdash; this section will be defined next.</p>
         </div>
 
-        <div class="form-row">
-          <label class="field-label" for="fFiveAtWork">5 @ Work:</label>
-          <textarea id="fFiveAtWork" class="text-area"></textarea>
-        </div>
-
-        <div class="form-row">
-          <label class="field-label" for="fKutez">Kutez:</label>
-          <textarea id="fKutez" class="text-area"></textarea>
-        </div>
-
-        <div class="form-row">
-          <label class="field-label" for="fSpecialInfo">Special Info:</label>
-          <textarea id="fSpecialInfo" class="text-area"></textarea>
+        <!-- Tab 3: Vendor (to be defined) -->
+        <div class="tab-panel" id="tabVendor" hidden>
+          <p class="tab-placeholder">Vendor &mdash; this section will be defined next.</p>
         </div>
 
         <div class="form-buttons">

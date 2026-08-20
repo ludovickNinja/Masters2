@@ -339,6 +339,38 @@ select.text-input { width: 241px; }
 .page-btn:disabled:not(.current) { color: #aaa; cursor: default; }
 .page-ellipsis { padding: 5px 4px; color: #888; font-size: 12px; }
 
+/* ===== Detailed view tabs ===== */
+.modal-tabs {
+  display: flex;
+  gap: 4px;
+  margin: 22px 0 0;
+  border-bottom: 1px solid #ccc;
+}
+.modal-tab {
+  background: #f2f2f2;
+  border: 1px solid #ccc;
+  border-bottom: none;
+  padding: 8px 18px;
+  font-size: 12px;
+  cursor: pointer;
+  color: #555;
+}
+.modal-tab:hover { background: #e8e8e8; }
+.modal-tab.active {
+  background: #fff;
+  font-weight: bold;
+  color: #000;
+  margin-bottom: -1px;
+  border-bottom: 1px solid #fff;
+}
+.tab-panel { padding-top: 18px; }
+.tab-panel[hidden] { display: none; }
+.tab-placeholder {
+  color: #777;
+  font-size: 12px;
+  padding: 24px 0 30px;
+}
+
 /* ===== Edit history in the detailed view ===== */
 .modal-log {
   margin-top: 24px;

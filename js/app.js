@@ -366,6 +366,20 @@
   // ---- Edit modal ----
   let editingMaster = null;
 
+  // ---- Detailed view tabs ----
+  function selectModalTab(tabId) {
+    document.querySelectorAll('#modalTabs .modal-tab').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.tab === tabId);
+    });
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.hidden = panel.id !== tabId;
+    });
+  }
+  document.getElementById('modalTabs').addEventListener('click', e => {
+    const btn = e.target.closest('.modal-tab');
+    if (btn) selectModalTab(btn.dataset.tab);
+  });
+
   function openEditModal(master) {
     editingMaster = master;
     document.getElementById('fUseForHeadStyle').checked = master.useForHeadStyle;
@@ -379,6 +393,7 @@
     document.getElementById('fSpecialInfo').value = master.specialInfo;
     document.getElementById('jobBagPreview').innerHTML = jobBagSVG();
     renderModalLog(master);
+    selectModalTab('tabProductionInstructions');   // always open on tab 1
     editModal.hidden = false;
     editModal.querySelector('.modal').scrollTop = 0;
   }
