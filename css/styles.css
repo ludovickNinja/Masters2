@@ -371,6 +371,160 @@ select.text-input { width: 241px; }
   padding: 24px 0 30px;
 }
 
+/* ===== Specifications tab ===== */
+.spec-section-title {
+  font-weight: bold;
+  font-size: 13px;
+  color: #333;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 5px;
+  margin: 4px 0 14px;
+}
+.spec-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 40px;
+  margin-bottom: 10px;
+}
+.spec-input, select.spec-select { width: 180px; }
+.spec-note { font-size: 11px; color: #888; margin: -8px 0 12px; }
+
+/* info tooltips on field labels */
+.info-tip {
+  display: inline-block;
+  position: relative;
+  width: 14px;
+  height: 14px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 50%;
+  background: #999;
+  color: #fff;
+  font-size: 10px;
+  font-weight: bold;
+  margin-left: 4px;
+  cursor: help;
+  vertical-align: 1px;
+}
+.info-tip::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 50%;
+  bottom: 20px;
+  transform: translateX(-50%);
+  width: 260px;
+  background: #333;
+  color: #fff;
+  font-weight: normal;
+  font-size: 11px;
+  line-height: 1.5;
+  padding: 8px 10px;
+  border-radius: 3px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.35);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity .15s;
+  z-index: 20;
+}
+.info-tip:hover::after,
+.info-tip:focus::after { opacity: 1; visibility: visible; }
+
+/* multi-select dropdowns (attribute categories) */
+.multi-select { position: relative; width: 225px; }
+.ms-display {
+  width: 100%;
+  text-align: left;
+  background: #fff;
+  border: 1px solid #999;
+  padding: 6px 22px 6px 8px;
+  font-size: 12px;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ms-display::after {
+  content: '▾';
+  position: absolute;
+  right: 8px;
+  color: #555;
+}
+.ms-panel {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  width: 100%;
+  max-height: 190px;
+  overflow-y: auto;
+  background: #fff;
+  border: 1px solid #999;
+  border-top: none;
+  box-shadow: 0 3px 8px rgba(0,0,0,.25);
+  z-index: 30;
+}
+.ms-option {
+  display: block;
+  padding: 5px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+.ms-option:hover { background: #eef3fd; }
+
+/* ===== Options Administration modal ===== */
+.options-title {
+  font-family: Verdana, sans-serif;
+  font-size: 20px;
+  font-weight: normal;
+  color: #333;
+  margin-bottom: 8px;
+}
+.options-intro { font-size: 12px; color: #666; margin-bottom: 22px; line-height: 1.5; }
+
+.options-matrix {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 12px;
+  margin-bottom: 12px;
+}
+.options-matrix th {
+  text-align: center;
+  background: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+.options-matrix th:first-child { text-align: left; }
+.options-matrix td {
+  border: 1px solid #e0e0e0;
+  padding: 6px 10px;
+}
+.options-matrix .pt-name { font-weight: bold; white-space: nowrap; }
+.options-matrix .pt-check { text-align: center; }
+.options-matrix .pt-remove { text-align: center; }
+.options-matrix .pt-remove a { color: #a33; font-size: 11px; text-decoration: none; }
+.options-matrix .pt-remove a:hover { text-decoration: underline; }
+
+.options-add-row { display: flex; gap: 6px; margin: 8px 0 20px; }
+
+.option-admin-block { margin-bottom: 18px; }
+.option-admin-title { font-weight: bold; font-size: 12px; margin-bottom: 6px; }
+.option-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.option-chip {
+  background: #f0f0f0;
+  border: 1px solid #ccc;
+  border-radius: 3px;
+  padding: 3px 6px 3px 8px;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.option-chip .chip-x {
+  color: #a33;
+  text-decoration: none;
+  font-weight: bold;
+  margin-left: 6px;
+}
+.option-chip .chip-x:hover { color: #d00; }
+
 /* ===== Edit history in the detailed view ===== */
 .modal-log {
   margin-top: 24px;
