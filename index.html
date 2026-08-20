@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Web Administration - Master Production Templates</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- ===== Page header ===== -->
+  <header class="site-header">
+    <div class="site-logo">
+      <svg viewBox="0 0 100 60" class="crown-svg" aria-hidden="true">
+        <g fill="none" stroke="#fff" stroke-width="1.5">
+          <polygon points="20,45 80,45 88,28 65,33 50,10 35,33 12,28"/>
+          <polyline points="12,28 35,33 30,45"/>
+          <polyline points="88,28 65,33 70,45"/>
+          <polyline points="35,33 50,45 65,33"/>
+          <polyline points="50,10 42,28 50,45 58,28 50,10"/>
+        </g>
+      </svg>
+    </div>
+    <div class="site-title">WEB ADMINISTRATION</div>
+  </header>
+
+  <!-- ===== Nav bar ===== -->
+  <nav class="nav-bar">
+    <div class="nav-left">
+      <a href="#">HOME</a>
+      <a href="#">MENU</a>
+      <a href="#">LOGOUT</a>
+      <span class="nav-user">(Ludovick Bilodeau)</span>
+    </div>
+    <div class="nav-right" id="navDate"></div>
+  </nav>
+
+  <!-- ===== Main content ===== -->
+  <main class="content-panel">
+    <h1 class="page-title">Master Production Templates</h1>
+
+    <div class="toolbar">
+      <div class="toolbar-links">
+        <a href="#" class="action-link" id="addTemplateLink">Add a new template</a>
+        <a href="#" class="action-link" id="addSideDiamondLink">Add a new side diamond template</a>
+      </div>
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Enter Template ID" autocomplete="off">
+        <button class="btn btn-primary" id="searchBtn">SEARCH</button>
+        <button class="btn btn-dark" id="resetBtn">RESET</button>
+      </div>
+    </div>
+
+    <table class="masters-table">
+      <thead>
+        <tr>
+          <th class="col-id">Template ID</th>
+          <th class="col-products"></th>
+          <th class="col-action">Action</th>
+        </tr>
+      </thead>
+      <tbody id="mastersBody">
+        <!-- rows injected by app.js -->
+      </tbody>
+    </table>
+  </main>
+
+  <!-- ===== Hover overlay (product preview) ===== -->
+  <div class="product-tooltip" id="productTooltip" hidden>
+    <div class="tooltip-meta">
+      <div>Style#: <span id="tooltipStyle"></span></div>
+      <div>SKU: <span id="tooltipSku"></span></div>
+    </div>
+    <div class="tooltip-image" id="tooltipImage"></div>
+  </div>
+
+  <!-- ===== Edit modal ===== -->
+  <div class="modal-backdrop" id="editModal" hidden>
+    <div class="modal">
+      <div class="modal-topbar">
+        <button class="modal-close" id="modalCloseBtn" title="Close">X</button>
+      </div>
+      <div class="modal-export">
+        <a href="#" id="exportExcelLink">Export to Excel</a>
+      </div>
+
+      <form id="masterForm">
+        <div class="form-row checkbox-row">
+          <label><input type="checkbox" id="fUseForHeadStyle"> <b>Use for Head Style</b></label>
+        </div>
+
+        <div class="form-split">
+          <div class="form-split-left">
+            <label class="field-label" for="fTemplateId">Template ID:</label>
+            <input type="text" id="fTemplateId" class="text-input">
+            <div class="file-row">
+              <input type="file" id="fTemplateFile">
+            </div>
+          </div>
+          <div class="form-split-right">
+            <div class="jobbag-preview" id="jobBagPreview"></div>
+            <a href="#" class="delete-link" id="jobBagDeleteLink">delete</a>
+            <div class="file-row">
+              <input type="file" id="fJobBagFile">
+            </div>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fJobBagMessage">Display message on Job Bag picture:</label>
+          <input type="text" id="fJobBagMessage" class="text-input" placeholder="Some message here...">
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fBnz">BNZ:</label>
+          <textarea id="fBnz" class="text-area"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fPsx">PSX:</label>
+          <textarea id="fPsx" class="text-area"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fFiveAtWork">5 @ Work:</label>
+          <textarea id="fFiveAtWork" class="text-area"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fKutez">Kutez:</label>
+          <textarea id="fKutez" class="text-area"></textarea>
+        </div>
+
+        <div class="form-row">
+          <label class="field-label" for="fSpecialInfo">Special Info:</label>
+          <textarea id="fSpecialInfo" class="text-area"></textarea>
+        </div>
+
+        <div class="form-buttons">
+          <button type="submit" class="btn btn-primary">Save</button>
+          <button type="button" class="btn btn-dark" id="modalCancelBtn">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
