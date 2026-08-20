@@ -4,6 +4,16 @@
    use the master template.
    ========================================================= */
 
+// Logged-in user (mock) - used when writing log entries
+const CURRENT_USER = 'Ludovick Bilodeau';
+
+// Master card statuses
+const STATUSES = {
+  draft:     { label: 'Draft/PD',  order: 0 },
+  review:    { label: 'In Review', order: 1 },
+  confirmed: { label: 'Confirmed', order: 2 }
+};
+
 // Metal color palettes used by the placeholder ring SVGs
 const METALS = {
   rose:   { band: '#e9c0ae', shade: '#d19a83', stone: '#f7f0ec' },
@@ -72,11 +82,11 @@ function buildProducts(base, metals, perMetal) {
   return products;
 }
 
-// Master production templates (keyed by Template ID)
-const MASTERS = {
-  'STA15-1': {
-    templateId: 'STA15-1',
-    inUse: true,
+function makeMaster(id, status, products, log) {
+  return {
+    templateId: id,
+    status,
+    inUse: status === 'confirmed',
     useForHeadStyle: false,
     jobBagMessage: '',
     bnz: '',
@@ -84,18 +94,93 @@ const MASTERS = {
     fiveAtWork: '',
     kutez: '',
     specialInfo: '',
-    products: buildProducts('STA15-1', ['rose', 'white', 'yellow'], 6)
-  },
-  'STA22-4': {
-    templateId: 'STA22-4',
-    inUse: false,
-    useForHeadStyle: true,
-    jobBagMessage: '',
-    bnz: '',
-    psx: '',
-    fiveAtWork: '',
-    kutez: '',
-    specialInfo: '',
-    products: buildProducts('STA22-4', ['white', 'yellow'], 4)
+    products,
+    log: log || []
+  };
+}
+
+// Master production templates
+const MASTERS = [
+  makeMaster('STA15-1', 'confirmed',
+    buildProducts('STA15-1', ['rose', 'white', 'yellow'], 6), [
+      { ts: '2026-06-02T09:14:22', user: 'Narine Chekhanovich', action: 'Created master card' },
+      { ts: '2026-06-15T13:40:05', user: 'Narine Chekhanovich', action: 'Edited: BNZ, PSX' },
+      { ts: '2026-07-01T10:02:47', user: 'Ludovick Bilodeau',   action: 'Status changed from In Review to Confirmed' }
+    ]),
+  makeMaster('STA22-4', 'review',
+    buildProducts('STA22-4', ['white', 'yellow'], 4), [
+      { ts: '2026-07-20T15:22:10', user: 'Jorge Gomez',       action: 'Created master card' },
+      { ts: '2026-08-11T11:05:33', user: 'Jorge Gomez',       action: 'Status changed from Draft/PD to In Review' }
+    ]),
+  makeMaster('STA31-2', 'confirmed',
+    buildProducts('STA31-2', ['rose', 'white'], 5), [
+      { ts: '2026-05-12T08:55:00', user: 'Narine Chekhanovich', action: 'Created master card' },
+      { ts: '2026-05-30T16:18:41', user: 'Ludovick Bilodeau',   action: 'Status changed from In Review to Confirmed' }
+    ]),
+  makeMaster('STA40-1', 'draft',
+    buildProducts('STA40-1', ['yellow'], 3), [
+      { ts: '2026-08-14T09:30:12', user: 'Ludovick Bilodeau', action: 'Created master card' }
+    ]),
+  makeMaster('STA40-2', 'draft',
+    buildProducts('STA40-2', ['rose'], 2), [
+      { ts: '2026-08-17T14:02:56', user: 'Jorge Gomez', action: 'Created master card' }
+    ]),
+  makeMaster('STA55-3', 'review',
+    buildProducts('STA55-3', ['rose', 'white', 'yellow'], 3), [
+      { ts: '2026-08-03T10:44:19', user: 'Narine Chekhanovich', action: 'Created master card' },
+      { ts: '2026-08-18T09:12:38', user: 'Narine Chekhanovich', action: 'Edited: Kutez, Special Info' },
+      { ts: '2026-08-18T09:13:02', user: 'Narine Chekhanovich', action: 'Status changed from Draft/PD to In Review' }
+    ])
+];
+
+/* ---- Generated masters (~200 total) --------------------------
+   Deterministic (seeded PRNG) so counts stay stable across
+   reloads. Stands in for the thousands of masters in production. */
+(function generateMasters() {
+  // mulberry32 seeded PRNG
+  let seed = 20260820;
+  function rnd() {
+    seed |= 0; seed = seed + 0x6D2B79F5 | 0;
+    let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
   }
-};
+  const pick = arr => arr[Math.floor(rnd() * arr.length)];
+
+  const SERIES = ['STA', 'ETE', 'WB', 'SOL', 'HLO', 'TRI'];
+  const USERS = ['Ludovick Bilodeau', 'Narine Chekhanovich', 'Jorge Gomez', 'Amelie Tran'];
+  const METAL_SETS = [['rose'], ['white'], ['yellow'],
+    ['rose', 'white'], ['white', 'yellow'], ['rose', 'white', 'yellow']];
+  // weighted: most masters are confirmed, fewer in review / draft
+  const STATUS_POOL = ['confirmed', 'confirmed', 'confirmed', 'confirmed',
+    'confirmed', 'confirmed', 'review', 'review', 'draft', 'draft'];
+
+  function randomDate() {
+    const start = new Date('2025-09-01').getTime();
+    const end = new Date('2026-08-19').getTime();
+    return new Date(start + rnd() * (end - start)).toISOString().slice(0, 19);
+  }
+
+  const used = new Set(MASTERS.map(m => m.templateId));
+  while (MASTERS.length < 200) {
+    const id = `${pick(SERIES)}${1 + Math.floor(rnd() * 89)}-${1 + Math.floor(rnd() * 6)}`;
+    if (used.has(id)) continue;
+    used.add(id);
+
+    const status = pick(STATUS_POOL);
+    const metals = pick(METAL_SETS);
+    const perMetal = 1 + Math.floor(rnd() * 6);
+    const creator = pick(USERS);
+    const log = [{ ts: randomDate(), user: creator, action: 'Created master card' }];
+    if (status !== 'draft') {
+      log.push({ ts: randomDate(), user: pick(USERS),
+        action: 'Status changed from Draft/PD to In Review' });
+    }
+    if (status === 'confirmed') {
+      log.push({ ts: randomDate(), user: pick(USERS),
+        action: 'Status changed from In Review to Confirmed' });
+    }
+    log.sort((a, b) => a.ts.localeCompare(b.ts));
+    MASTERS.push(makeMaster(id, status, buildProducts(id, metals, perMetal), log));
+  }
+})();

@@ -11,15 +11,7 @@
   <!-- ===== Page header ===== -->
   <header class="site-header">
     <div class="site-logo">
-      <svg viewBox="0 0 100 60" class="crown-svg" aria-hidden="true">
-        <g fill="none" stroke="#fff" stroke-width="1.5">
-          <polygon points="20,45 80,45 88,28 65,33 50,10 35,33 12,28"/>
-          <polyline points="12,28 35,33 30,45"/>
-          <polyline points="88,28 65,33 70,45"/>
-          <polyline points="35,33 50,45 65,33"/>
-          <polyline points="50,10 42,28 50,45 58,28 50,10"/>
-        </g>
-      </svg>
+      <img src="assets/logo.png" alt="Crownring" class="logo-img">
     </div>
     <div class="site-title">WEB ADMINISTRATION</div>
   </header>
@@ -51,11 +43,22 @@
       </div>
     </div>
 
+    <div class="status-counts" id="statusCounts">
+      <!-- clickable status counts injected by app.js -->
+    </div>
+
+    <div class="results-summary" id="resultsSummary"></div>
+
+    <div class="loading-indicator" id="loadingIndicator" hidden>
+      <span class="spinner"></span> Loading masters...
+    </div>
+
     <table class="masters-table">
       <thead>
         <tr>
-          <th class="col-id">Template ID</th>
+          <th class="col-id sortable" id="sortById">Template ID <span class="sort-arrow"></span></th>
           <th class="col-products"></th>
+          <th class="col-status sortable" id="sortByStatus">Status <span class="sort-arrow"></span></th>
           <th class="col-action">Action</th>
         </tr>
       </thead>
@@ -63,6 +66,8 @@
         <!-- rows injected by app.js -->
       </tbody>
     </table>
+
+    <div class="pager" id="pager"></div>
   </main>
 
   <!-- ===== Hover overlay (product preview) ===== -->
@@ -93,6 +98,12 @@
           <div class="form-split-left">
             <label class="field-label" for="fTemplateId">Template ID:</label>
             <input type="text" id="fTemplateId" class="text-input">
+            <label class="field-label status-label" for="fStatus">Status:</label>
+            <select id="fStatus" class="text-input">
+              <option value="draft">Draft/PD</option>
+              <option value="review">In Review</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
             <div class="file-row">
               <input type="file" id="fTemplateFile">
             </div>
@@ -145,6 +156,7 @@
   </div>
 
   <script src="js/data.js"></script>
+  <script src="js/api.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
