@@ -366,6 +366,123 @@
   // ---- Edit modal ----
   let editingMaster = null;
 
+  // ---- Specification fields (Specifications tab) ----
+  // type 'multi' = attribute category where a design can hold several values
+  const SPEC_FIELDS = [
+    { key: 'widthTop',        label: 'Width - Top',        elId: 'fWidthTop' },
+    { key: 'widthBottom',     label: 'Width - Bottom',     elId: 'fWidthBottom' },
+    { key: 'thicknessTop',    label: 'Thickness - Top',    elId: 'fThicknessTop' },
+    { key: 'thicknessBottom', label: 'Thickness - Bottom', elId: 'fThicknessBottom' },
+    { key: 'style',           label: 'Style',              elId: 'fStyle',     type: 'multi' },
+    { key: 'finishing',       label: 'Finishing',          elId: 'fFinishing', type: 'multi' },
+    { key: 'profile',         label: 'Profile',            elId: 'fProfile',   type: 'multi' },
+    { key: 'headType',        label: 'Head Type',          elId: 'fHeadType',  type: 'multi' },
+    { key: 'shankType',       label: 'Shank Type',         elId: 'fShankType', type: 'multi' },
+    { key: 'estWeight',       label: 'Estimated Weight',   elId: 'fEstWeight' },
+    { key: 'confWeight',      label: 'Confirmed Weight',   elId: 'fConfWeight' }
+  ];
+
+  // ---- Multi-select dropdowns (checkbox panels), one per attribute category ----
+  const multiSelects = {};   // elId -> { get(), set(values) }
+
+  function closeAllMultiPanels(except) {
+    document.querySelectorAll('.ms-panel').forEach(p => {
+      if (p !== except) p.hidden = true;
+    });
+  }
+  document.addEventListener('click', () => closeAllMultiPanels());
+
+  // built as a function so the controls can be rebuilt after the
+  // Options Administration module changes the available values
+  function buildMultiSelect(root) {
+    root.innerHTML = '';
+    const options = (SPEC_OPTIONS[root.dataset.options] || []).slice();
+    let selected = [];
+
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'ms-display';
+    const panel = document.createElement('div');
+    panel.className = 'ms-panel';
+    panel.hidden = true;
+    panel.addEventListener('click', e => e.stopPropagation());
+
+    function updateDisplay() {
+      btn.textContent = selected.length ? selected.join(', ') : '- Select -';
+      btn.title = btn.textContent;
+    }
+
+    options.forEach(opt => {
+      const label = document.createElement('label');
+      label.className = 'ms-option';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.value = opt;
+      cb.addEventListener('change', () => {
+        selected = options.filter(o =>
+          Array.from(panel.querySelectorAll('input:checked')).some(c => c.value === o));
+        updateDisplay();
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(' ' + opt));
+      panel.appendChild(label);
+    });
+
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      const wasHidden = panel.hidden;
+      closeAllMultiPanels();
+      panel.hidden = !wasHidden;
+    });
+
+    root.appendChild(btn);
+    root.appendChild(panel);
+    updateDisplay();
+
+    multiSelects[root.id] = {
+      get: () => selected.slice(),
+      set: values => {
+        selected = options.filter(o => (values || []).includes(o));
+        panel.querySelectorAll('input').forEach(cb => {
+          cb.checked = selected.includes(cb.value);
+        });
+        updateDisplay();
+      }
+    };
+  }
+  function rebuildAllMultiSelects() {
+    document.querySelectorAll('.multi-select').forEach(buildMultiSelect);
+  }
+  rebuildAllMultiSelects();
+
+  // ---- Product Type (options controlled by the Options Administration module) ----
+  const productTypeSelect = document.getElementById('fProductType');
+
+  function refreshProductTypeSelect() {
+    const current = productTypeSelect.value;
+    productTypeSelect.innerHTML = '';
+    const blank = document.createElement('option');
+    blank.value = '';
+    blank.textContent = '- Select -';
+    productTypeSelect.appendChild(blank);
+    OPTION_CONFIG.productTypes.forEach(pt => {
+      const o = document.createElement('option');
+      o.value = pt.name;
+      o.textContent = pt.name;
+      productTypeSelect.appendChild(o);
+    });
+    productTypeSelect.value = current;
+  }
+
+  // show only the attribute categories linked to the selected product type
+  function updateSpecCategoryVisibility() {
+    const pt = OPTION_CONFIG.productTypes.find(p => p.name === productTypeSelect.value);
+    document.querySelectorAll('[data-category]').forEach(row => {
+      row.hidden = !!pt && !pt.categories.includes(row.dataset.category);
+    });
+  }
+  productTypeSelect.addEventListener('change', updateSpecCategoryVisibility);
+
   // ---- Detailed view tabs ----
   function selectModalTab(tabId) {
     document.querySelectorAll('#modalTabs .modal-tab').forEach(btn => {
@@ -385,12 +502,20 @@
     document.getElementById('fUseForHeadStyle').checked = master.useForHeadStyle;
     document.getElementById('fTemplateId').value = master.templateId;
     document.getElementById('fStatus').value = master.status;
+    refreshProductTypeSelect();
+    productTypeSelect.value = master.productType || '';
+    updateSpecCategoryVisibility();
     document.getElementById('fJobBagMessage').value = master.jobBagMessage;
     document.getElementById('fBnz').value = master.bnz;
     document.getElementById('fPsx').value = master.psx;
     document.getElementById('fFiveAtWork').value = master.fiveAtWork;
     document.getElementById('fKutez').value = master.kutez;
     document.getElementById('fSpecialInfo').value = master.specialInfo;
+    SPEC_FIELDS.forEach(f => {
+      if (f.type === 'multi') multiSelects[f.elId].set(master.specs[f.key]);
+      else document.getElementById(f.elId).value = master.specs[f.key];
+    });
+    closeAllMultiPanels();
     document.getElementById('jobBagPreview').innerHTML = jobBagSVG();
     renderModalLog(master);
     selectModalTab('tabProductionInstructions');   // always open on tab 1
@@ -451,6 +576,7 @@
     const fields = [
       { key: 'useForHeadStyle', label: 'Use for Head Style', value: document.getElementById('fUseForHeadStyle').checked },
       { key: 'templateId',      label: 'Template ID',        value: document.getElementById('fTemplateId').value },
+      { key: 'productType',     label: 'Product Type',       value: productTypeSelect.value },
       { key: 'jobBagMessage',   label: 'Job Bag message',    value: document.getElementById('fJobBagMessage').value },
       { key: 'bnz',             label: 'BNZ',                value: document.getElementById('fBnz').value },
       { key: 'psx',             label: 'PSX',                value: document.getElementById('fPsx').value },
@@ -463,6 +589,22 @@
       if (m[f.key] !== f.value) {
         changed.push(f.label);
         m[f.key] = f.value;
+      }
+    });
+    // specification fields (multi categories compare as value lists)
+    SPEC_FIELDS.forEach(f => {
+      if (f.type === 'multi') {
+        const values = multiSelects[f.elId].get();
+        if (values.join('|') !== (m.specs[f.key] || []).join('|')) {
+          changed.push(f.label);
+          m.specs[f.key] = values;
+        }
+      } else {
+        const value = document.getElementById(f.elId).value;
+        if (m.specs[f.key] !== value) {
+          changed.push(f.label);
+          m.specs[f.key] = value;
+        }
       }
     });
     if (changed.length) addLog(m, 'Edited: ' + changed.join(', '));
@@ -488,6 +630,175 @@
     e.preventDefault();
     alert('Export to Excel: not implemented in POC');
   });
+  /* ===== Options Administration (opened from MENU) =====
+     Controls product types, their linked attribute categories,
+     and the option values of every attribute selection box. */
+  const optionsModal = document.getElementById('optionsModal');
+  const ptMatrix = document.getElementById('ptMatrix');
+  const categoryOptionLists = document.getElementById('categoryOptionLists');
+
+  function renderPtMatrix() {
+    const catKeys = Object.keys(OPTION_CONFIG.categories);
+    ptMatrix.innerHTML = '';
+
+    const thead = document.createElement('thead');
+    const headRow = document.createElement('tr');
+    ['Product Type', ...catKeys.map(k => OPTION_CONFIG.categories[k].label), '']
+      .forEach(text => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        headRow.appendChild(th);
+      });
+    thead.appendChild(headRow);
+    ptMatrix.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    OPTION_CONFIG.productTypes.forEach(pt => {
+      const tr = document.createElement('tr');
+
+      const tdName = document.createElement('td');
+      tdName.className = 'pt-name';
+      tdName.textContent = pt.name;
+      tr.appendChild(tdName);
+
+      catKeys.forEach(key => {
+        const td = document.createElement('td');
+        td.className = 'pt-check';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.checked = pt.categories.includes(key);
+        cb.addEventListener('change', () => {
+          if (cb.checked) {
+            if (!pt.categories.includes(key)) pt.categories.push(key);
+          } else {
+            pt.categories = pt.categories.filter(c => c !== key);
+          }
+        });
+        td.appendChild(cb);
+        tr.appendChild(td);
+      });
+
+      const tdRemove = document.createElement('td');
+      tdRemove.className = 'pt-remove';
+      const removeLink = document.createElement('a');
+      removeLink.href = '#';
+      removeLink.textContent = 'remove';
+      removeLink.addEventListener('click', e => {
+        e.preventDefault();
+        if (!confirm(`Remove product type "${pt.name}"?`)) return;
+        OPTION_CONFIG.productTypes = OPTION_CONFIG.productTypes.filter(p => p !== pt);
+        renderPtMatrix();
+      });
+      tdRemove.appendChild(removeLink);
+      tr.appendChild(tdRemove);
+
+      tbody.appendChild(tr);
+    });
+    ptMatrix.appendChild(tbody);
+  }
+
+  document.getElementById('addPtBtn').addEventListener('click', () => {
+    const input = document.getElementById('newPtName');
+    const name = input.value.trim();
+    if (!name) return;
+    if (OPTION_CONFIG.productTypes.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+      alert(`Product type "${name}" already exists.`);
+      return;
+    }
+    OPTION_CONFIG.productTypes.push({ name, categories: [] });
+    input.value = '';
+    renderPtMatrix();
+  });
+
+  function renderCategoryLists() {
+    categoryOptionLists.innerHTML = '';
+    Object.keys(OPTION_CONFIG.categories).forEach(key => {
+      const cat = OPTION_CONFIG.categories[key];
+      const block = document.createElement('div');
+      block.className = 'option-admin-block';
+
+      const title = document.createElement('div');
+      title.className = 'option-admin-title';
+      title.textContent = cat.label;
+      block.appendChild(title);
+
+      const chips = document.createElement('div');
+      chips.className = 'option-chips';
+      cat.options.forEach(opt => {
+        const chip = document.createElement('span');
+        chip.className = 'option-chip';
+        chip.textContent = opt;
+        const x = document.createElement('a');
+        x.href = '#';
+        x.className = 'chip-x';
+        x.textContent = '×';
+        x.title = `Remove "${opt}"`;
+        x.addEventListener('click', e => {
+          e.preventDefault();
+          if (!confirm(`Remove option "${opt}" from ${cat.label}?`)) return;
+          cat.options.splice(cat.options.indexOf(opt), 1);
+          renderCategoryLists();
+        });
+        chip.appendChild(x);
+        chips.appendChild(chip);
+      });
+      block.appendChild(chips);
+
+      const addRow = document.createElement('div');
+      addRow.className = 'options-add-row';
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'text-input';
+      input.placeholder = `Add ${cat.label} option...`;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn btn-dark';
+      btn.textContent = 'Add';
+      function addOption() {
+        const value = input.value.trim();
+        if (!value) return;
+        if (cat.options.some(o => o.toLowerCase() === value.toLowerCase())) {
+          alert(`"${value}" is already an option of ${cat.label}.`);
+          return;
+        }
+        cat.options.push(value);
+        input.value = '';
+        renderCategoryLists();
+      }
+      btn.addEventListener('click', addOption);
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); addOption(); }
+      });
+      addRow.appendChild(input);
+      addRow.appendChild(btn);
+      block.appendChild(addRow);
+
+      categoryOptionLists.appendChild(block);
+    });
+  }
+
+  function openOptionsModal() {
+    renderPtMatrix();
+    renderCategoryLists();
+    optionsModal.hidden = false;
+    optionsModal.querySelector('.modal').scrollTop = 0;
+  }
+  function closeOptionsModal() {
+    optionsModal.hidden = true;
+    // the edit modal controls feed from the config: rebuild them
+    rebuildAllMultiSelects();
+    refreshProductTypeSelect();
+  }
+  document.getElementById('navMenuLink').addEventListener('click', e => {
+    e.preventDefault();
+    openOptionsModal();
+  });
+  document.getElementById('optionsCloseBtn').addEventListener('click', closeOptionsModal);
+  document.getElementById('optionsDoneBtn').addEventListener('click', closeOptionsModal);
+  optionsModal.addEventListener('click', e => {
+    if (e.target === optionsModal) closeOptionsModal();
+  });
+
   document.getElementById('addTemplateLink').addEventListener('click', e => {
     e.preventDefault();
     alert('Add a new template: not implemented in POC');

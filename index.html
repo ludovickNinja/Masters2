@@ -20,7 +20,7 @@
   <nav class="nav-bar">
     <div class="nav-left">
       <a href="#">HOME</a>
-      <a href="#">MENU</a>
+      <a href="#" id="navMenuLink">MENU</a>
       <a href="#">LOGOUT</a>
       <span class="nav-user">(Ludovick Bilodeau)</span>
     </div>
@@ -104,6 +104,10 @@
               <option value="review">In Review</option>
               <option value="confirmed">Confirmed</option>
             </select>
+            <label class="field-label status-label" for="fProductType">Product Type:</label>
+            <select id="fProductType" class="text-input">
+              <!-- options come from OPTION_CONFIG (Options Administration) -->
+            </select>
             <div class="file-row">
               <input type="file" id="fTemplateFile">
             </div>
@@ -157,9 +161,73 @@
           </div>
         </div>
 
-        <!-- Tab 2: Specifications (to be defined) -->
+        <!-- Tab 2: Specifications (design attributes) -->
         <div class="tab-panel" id="tabSpecifications" hidden>
-          <p class="tab-placeholder">Specifications &mdash; this section will be defined next.</p>
+
+          <div class="spec-section-title">Dimensions</div>
+          <div class="spec-grid">
+            <div class="form-row">
+              <label class="field-label" for="fWidthTop">Width &ndash; Top (mm):
+                <span class="info-tip" tabindex="0"
+                  data-tip="Depending on the design, this may be the widest visible part of the ring.">?</span>
+              </label>
+              <input type="number" step="0.01" min="0" id="fWidthTop" class="text-input spec-input">
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="fWidthBottom">Width &ndash; Bottom (mm):</label>
+              <input type="number" step="0.01" min="0" id="fWidthBottom" class="text-input spec-input">
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="fThicknessTop">Thickness &ndash; Top (mm):
+                <span class="info-tip" tabindex="0"
+                  data-tip="On an engagement ring, the top thickness is measured from the finger to the diamond table at the master head size.">?</span>
+              </label>
+              <input type="number" step="0.01" min="0" id="fThicknessTop" class="text-input spec-input">
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="fThicknessBottom">Thickness &ndash; Bottom (mm):</label>
+              <input type="number" step="0.01" min="0" id="fThicknessBottom" class="text-input spec-input">
+            </div>
+          </div>
+
+          <div class="spec-section-title">Design Attributes</div>
+          <p class="spec-note">A design can have more than one value per category.
+            Categories shown depend on the Product Type.</p>
+          <div class="spec-grid">
+            <div class="form-row" data-category="style">
+              <label class="field-label">Style:</label>
+              <div class="multi-select" id="fStyle" data-options="style"></div>
+            </div>
+            <div class="form-row" data-category="finishing">
+              <label class="field-label">Finishing:</label>
+              <div class="multi-select" id="fFinishing" data-options="finishing"></div>
+            </div>
+            <div class="form-row" data-category="profile">
+              <label class="field-label">Profile:</label>
+              <div class="multi-select" id="fProfile" data-options="profile"></div>
+            </div>
+            <div class="form-row" data-category="headType">
+              <label class="field-label">Head Type:</label>
+              <div class="multi-select" id="fHeadType" data-options="headType"></div>
+            </div>
+            <div class="form-row" data-category="shankType">
+              <label class="field-label">Shank Type:</label>
+              <div class="multi-select" id="fShankType" data-options="shankType"></div>
+            </div>
+          </div>
+
+          <div class="spec-section-title">Weight</div>
+          <div class="spec-grid">
+            <div class="form-row">
+              <label class="field-label" for="fEstWeight">Estimated Weight (g):</label>
+              <input type="number" step="0.01" min="0" id="fEstWeight" class="text-input spec-input">
+            </div>
+            <div class="form-row">
+              <label class="field-label" for="fConfWeight">Confirmed Weight (g):</label>
+              <input type="number" step="0.01" min="0" id="fConfWeight" class="text-input spec-input">
+            </div>
+          </div>
+
         </div>
 
         <!-- Tab 3: Vendor (to be defined) -->
@@ -177,6 +245,33 @@
       <div class="modal-log">
         <a href="#" class="log-toggle" id="modalLogToggle">&#9656; Log (0)</a>
         <div id="modalLogContent" hidden></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== Options Administration modal (opened from MENU) ===== -->
+  <div class="modal-backdrop" id="optionsModal" hidden>
+    <div class="modal">
+      <div class="modal-topbar">
+        <button class="modal-close" id="optionsCloseBtn" title="Close">X</button>
+      </div>
+      <h2 class="options-title">Options Administration</h2>
+      <p class="options-intro">Controls the selections available in the master card detailed view:
+        product types, the attribute categories linked to each product type, and the option
+        values of every attribute selection box. Changes apply immediately.</p>
+
+      <div class="spec-section-title">Product Types &amp; Linked Attribute Categories</div>
+      <table class="options-matrix" id="ptMatrix"></table>
+      <div class="options-add-row">
+        <input type="text" id="newPtName" class="text-input" placeholder="New product type name...">
+        <button type="button" class="btn btn-primary" id="addPtBtn">Add Product Type</button>
+      </div>
+
+      <div class="spec-section-title">Attribute Selection Box Options</div>
+      <div id="categoryOptionLists"></div>
+
+      <div class="form-buttons">
+        <button type="button" class="btn btn-primary" id="optionsDoneBtn">Done</button>
       </div>
     </div>
   </div>

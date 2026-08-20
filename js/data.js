@@ -14,6 +14,48 @@ const STATUSES = {
   confirmed: { label: 'Confirmed', order: 2 }
 };
 
+/* ---- Option configuration ------------------------------------
+   Controlled through the Options Administration module (MENU).
+   Defines the product types, which attribute categories apply to
+   each product type, and the option values of every attribute
+   selection box. In the real system this lives in its own module
+   and database tables. */
+const OPTION_CONFIG = {
+  // attribute categories + the option values of their selection boxes
+  categories: {
+    style: { label: 'Style', options: [
+      '3 Stone', '3 Stone Halo', 'Bypass', 'Chevron', 'Cluster', 'Double Halo',
+      'Free Form', 'Halo', 'Hidden Halo', 'Solitaire', 'Split Shank', 'Straight',
+      'Toi et Moi', 'Twisted', 'Wide Band'] },
+    finishing: { label: 'Finishing', options: [
+      'Polished', 'Brushed', 'Satin', 'Hammered', 'Sandblasted', 'Matte'] },
+    profile: { label: 'Profile', options: [
+      'Flat', 'Dome', 'Comfort Fit', 'Knife Edge', 'Concave', 'Beveled'] },
+    headType: { label: 'Head Type', options: [
+      'None', '4-Prong', '6-Prong', 'Bezel', 'Semi-Bezel', 'Halo', 'Trellis', 'Cathedral'] },
+    shankType: { label: 'Shank Type', options: [
+      'Cathedral', 'Non Cathedral', 'Euro Shank'] }
+  },
+  // product types + the attribute categories linked to each
+  productTypes: [
+    { name: 'Engagement Ring',         categories: ['style', 'finishing', 'profile', 'headType', 'shankType'] },
+    { name: 'Matching Band/Stackable', categories: ['style', 'finishing', 'profile'] },
+    { name: 'Wedding Band',            categories: ['finishing', 'profile'] },
+    { name: 'Fashion Ring',            categories: ['style', 'finishing', 'profile', 'headType'] },
+    { name: 'Signet Ring',             categories: ['finishing', 'profile'] },
+    { name: 'Earrings',                categories: ['finishing', 'headType'] }
+  ]
+};
+
+// Convenience alias: SPEC_OPTIONS[key] -> live options array of that category
+const SPEC_OPTIONS = {};
+Object.keys(OPTION_CONFIG.categories).forEach(k => {
+  Object.defineProperty(SPEC_OPTIONS, k, {
+    get: () => OPTION_CONFIG.categories[k].options,
+    enumerable: true
+  });
+});
+
 // Metal color palettes used by the placeholder ring SVGs
 const METALS = {
   rose:   { band: '#e9c0ae', shade: '#d19a83', stone: '#f7f0ec' },
@@ -87,6 +129,7 @@ function makeMaster(id, status, products, log) {
     templateId: id,
     status,
     inUse: status === 'confirmed',
+    productType: '',
     useForHeadStyle: false,
     jobBagMessage: '',
     bnz: '',
@@ -94,6 +137,14 @@ function makeMaster(id, status, products, log) {
     fiveAtWork: '',
     kutez: '',
     specialInfo: '',
+    // design specifications (empty until filled in);
+    // attribute categories are arrays - a design can have several values each
+    specs: {
+      widthTop: '', widthBottom: '',
+      thicknessTop: '', thicknessBottom: '',
+      style: [], finishing: [], profile: [], headType: [], shankType: [],
+      estWeight: '', confWeight: ''
+    },
     products,
     log: log || []
   };
@@ -132,6 +183,35 @@ const MASTERS = [
       { ts: '2026-08-18T09:13:02', user: 'Narine Chekhanovich', action: 'Status changed from Draft/PD to In Review' }
     ])
 ];
+
+// Product types + specs for the hand-authored masters
+MASTERS[0].productType = 'Matching Band/Stackable';
+MASTERS[1].productType = 'Engagement Ring';
+MASTERS[2].productType = 'Engagement Ring';
+MASTERS[3].productType = 'Wedding Band';
+MASTERS[4].productType = 'Fashion Ring';
+MASTERS[5].productType = 'Engagement Ring';
+Object.assign(MASTERS[0].specs, {  // STA15-1
+  widthTop: '3.20', widthBottom: '2.60',
+  thicknessTop: '1.80', thicknessBottom: '1.55',
+  style: ['Straight', 'Wide Band'], finishing: ['Polished'],
+  profile: ['Comfort Fit'], headType: ['None'], shankType: ['Non Cathedral'],
+  estWeight: '4.10', confWeight: '4.25'
+});
+Object.assign(MASTERS[1].specs, {  // STA22-4
+  widthTop: '2.40', widthBottom: '2.40',
+  thicknessTop: '1.60', thicknessBottom: '1.60',
+  style: ['Solitaire'], finishing: ['Brushed', 'Polished'],
+  profile: ['Flat'], headType: ['4-Prong'], shankType: ['Cathedral'],
+  estWeight: '3.60', confWeight: ''
+});
+Object.assign(MASTERS[2].specs, {  // STA31-2
+  widthTop: '4.00', widthBottom: '3.10',
+  thicknessTop: '2.00', thicknessBottom: '1.70',
+  style: ['Halo', 'Split Shank'], finishing: ['Polished', 'Hammered'],
+  profile: ['Dome'], headType: ['Halo'], shankType: ['Non Cathedral'],
+  estWeight: '5.30', confWeight: '5.18'
+});
 
 /* ---- Generated masters (~200 total) --------------------------
    Deterministic (seeded PRNG) so counts stay stable across
@@ -181,6 +261,37 @@ const MASTERS = [
         action: 'Status changed from In Review to Confirmed' });
     }
     log.sort((a, b) => a.ts.localeCompare(b.ts));
-    MASTERS.push(makeMaster(id, status, buildProducts(id, metals, perMetal), log));
+    const master = makeMaster(id, status, buildProducts(id, metals, perMetal), log);
+    master.productType = pick(OPTION_CONFIG.productTypes).name;
+
+    // fill in design specs (drafts may not have them yet)
+    if (status !== 'draft') {
+      // one value per category, sometimes a second one
+      const pickMulti = arr => {
+        const out = [pick(arr)];
+        if (rnd() < 0.35) {
+          const second = pick(arr);
+          if (!out.includes(second)) out.push(second);
+        }
+        return out;
+      };
+      const widthTop = 2 + rnd() * 4;
+      const thickTop = 1.3 + rnd() * 1.2;
+      const est = 2.5 + rnd() * 5;
+      master.specs = {
+        widthTop: widthTop.toFixed(2),
+        widthBottom: (widthTop - rnd() * 1.2).toFixed(2),
+        thicknessTop: thickTop.toFixed(2),
+        thicknessBottom: (thickTop - rnd() * 0.4).toFixed(2),
+        style: pickMulti(SPEC_OPTIONS.style),
+        finishing: pickMulti(SPEC_OPTIONS.finishing),
+        profile: pickMulti(SPEC_OPTIONS.profile),
+        headType: pickMulti(SPEC_OPTIONS.headType),
+        shankType: [pick(SPEC_OPTIONS.shankType)],
+        estWeight: est.toFixed(2),
+        confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : ''
+      };
+    }
+    MASTERS.push(master);
   }
 })();
