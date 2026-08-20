@@ -55,7 +55,6 @@
   let counts       = { all: 0, draft: 0, review: 0, confirmed: 0 };
   let lastResult   = null;     // last page payload from the api
   let loadToken    = 0;        // guards against out-of-order responses
-  const expandedLogs = new Set();
 
   const listActive = () => statusFilter !== null || searchTerm !== '';
 
@@ -145,7 +144,6 @@
       if (!btn.disabled) {
         btn.addEventListener('click', () => {
           currentPage = page;
-          expandedLogs.clear();
           loadPage();
         });
       }
@@ -279,46 +277,6 @@
       });
       tr.appendChild(tdAction);
       mastersBody.appendChild(tr);
-
-      // ---- collapsible log section (collapsed by default) ----
-      const trLog = document.createElement('tr');
-      trLog.className = 'log-row';
-      const tdLog = document.createElement('td');
-      tdLog.colSpan = 4;
-
-      const expanded = expandedLogs.has(master.templateId);
-      const toggle = document.createElement('a');
-      toggle.href = '#';
-      toggle.className = 'log-toggle';
-      toggle.textContent = `${expanded ? '▾' : '▸'} Log (${master.log.length})`;
-      toggle.addEventListener('click', e => {
-        e.preventDefault();
-        if (expandedLogs.has(master.templateId)) expandedLogs.delete(master.templateId);
-        else expandedLogs.add(master.templateId);
-        renderList(lastResult ? lastResult.items : []);
-      });
-      tdLog.appendChild(toggle);
-
-      if (expanded) {
-        const logTable = document.createElement('table');
-        logTable.className = 'log-table';
-        logTable.innerHTML = '<thead><tr><th>Date</th><th>User</th><th>Change</th></tr></thead>';
-        const tbody = document.createElement('tbody');
-        master.log.slice().reverse().forEach(entry => {
-          const row = document.createElement('tr');
-          [formatLogDate(entry.ts), entry.user, entry.action].forEach(text => {
-            const cell = document.createElement('td');
-            cell.textContent = text;
-            row.appendChild(cell);
-          });
-          tbody.appendChild(row);
-        });
-        logTable.appendChild(tbody);
-        tdLog.appendChild(logTable);
-      }
-
-      trLog.appendChild(tdLog);
-      mastersBody.appendChild(trLog);
     });
   }
 
@@ -355,7 +313,6 @@
     loadingEl.hidden = true;
     resultsSummary.textContent = '';
     pagerEl.innerHTML = '';
-    expandedLogs.clear();
     renderCounts();
     renderHint();
     updateSortArrows();
@@ -421,9 +378,43 @@
     document.getElementById('fKutez').value = master.kutez;
     document.getElementById('fSpecialInfo').value = master.specialInfo;
     document.getElementById('jobBagPreview').innerHTML = jobBagSVG();
+    renderModalLog(master);
     editModal.hidden = false;
     editModal.querySelector('.modal').scrollTop = 0;
   }
+
+  // ---- Edit history at the bottom of the detailed view (collapsed) ----
+  const modalLogToggle  = document.getElementById('modalLogToggle');
+  const modalLogContent = document.getElementById('modalLogContent');
+
+  function renderModalLog(master) {
+    modalLogContent.hidden = true;   // collapsed on every open
+    modalLogToggle.textContent = `▸ Log (${master.log.length})`;
+    modalLogContent.innerHTML = '';
+
+    const logTable = document.createElement('table');
+    logTable.className = 'log-table';
+    logTable.innerHTML = '<thead><tr><th>Date</th><th>User</th><th>Change</th></tr></thead>';
+    const tbody = document.createElement('tbody');
+    master.log.slice().reverse().forEach(entry => {
+      const row = document.createElement('tr');
+      [formatLogDate(entry.ts), entry.user, entry.action].forEach(text => {
+        const cell = document.createElement('td');
+        cell.textContent = text;
+        row.appendChild(cell);
+      });
+      tbody.appendChild(row);
+    });
+    logTable.appendChild(tbody);
+    modalLogContent.appendChild(logTable);
+  }
+
+  modalLogToggle.addEventListener('click', e => {
+    e.preventDefault();
+    modalLogContent.hidden = !modalLogContent.hidden;
+    const count = editingMaster ? editingMaster.log.length : 0;
+    modalLogToggle.textContent = `${modalLogContent.hidden ? '▸' : '▾'} Log (${count})`;
+  });
 
   function closeEditModal() {
     editModal.hidden = true;
