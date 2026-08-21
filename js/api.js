@@ -25,11 +25,12 @@ const api = (function () {
     return delay(counts);
   }
 
-  // GET /masters?status=&search=&page=&pageSize=&sort=&dir=
-  function fetchMasters({ status = 'all', query = '', page = 1,
+  // GET /masters?status=&search=&productTypes=&page=&pageSize=&sort=&dir=
+  function fetchMasters({ status = 'all', query = '', productTypes = [], page = 1,
                           pageSize = 25, sortKey = 'id', sortAsc = true } = {}) {
     let list = MASTERS.slice();
     if (status !== 'all') list = list.filter(m => m.status === status);
+    if (productTypes.length) list = list.filter(m => productTypes.includes(m.productType));
     if (query) {
       const q = query.toUpperCase();
       list = list.filter(m => m.templateId.toUpperCase().startsWith(q));

@@ -34,16 +34,32 @@ const OPTION_CONFIG = {
     headType: { label: 'Head Type', options: [
       'None', '4-Prong', '6-Prong', 'Bezel', 'Semi-Bezel', 'Halo', 'Trellis', 'Cathedral'] },
     shankType: { label: 'Shank Type', options: [
-      'Cathedral', 'Non Cathedral', 'Euro Shank'] }
+      'Cathedral', 'Non Cathedral', 'Euro Shank'] },
+    centerShape: { label: 'Center Shape', options: [
+      'Round', 'Oval', 'Cushion', 'Princess', 'Emerald', 'Radiant',
+      'Pear', 'Marquise', 'Asscher', 'Heart'] },
+    centerCarat: { label: 'Center Stone Carat Size', options: [
+      '0.25 ct', '0.50 ct', '0.75 ct', '1.00 ct', '1.25 ct',
+      '1.50 ct', '2.00 ct', '2.50 ct', '3.00 ct'] }
   },
   // product types + the attribute categories linked to each
+  // (Center Shape / Center Stone Carat Size are Engagement Ring specific)
   productTypes: [
-    { name: 'Engagement Ring',         categories: ['style', 'finishing', 'profile', 'headType', 'shankType'] },
+    { name: 'Engagement Ring',         categories: ['style', 'finishing', 'profile', 'headType', 'shankType', 'centerShape', 'centerCarat'] },
     { name: 'Matching Band/Stackable', categories: ['style', 'finishing', 'profile'] },
     { name: 'Wedding Band',            categories: ['finishing', 'profile'] },
     { name: 'Fashion Ring',            categories: ['style', 'finishing', 'profile', 'headType'] },
     { name: 'Signet Ring',             categories: ['finishing', 'profile'] },
     { name: 'Earrings',                categories: ['finishing', 'headType'] }
+  ],
+  // vendors we currently work with (masters without a vendor are made in house)
+  vendors: [
+    'A&M Casting',
+    'Golden Source Co.',
+    'Kim International',
+    'Meira Jewelry',
+    'Presidium Manufacturing',
+    'Shenzhen Brightgems'
   ]
 };
 
@@ -143,8 +159,12 @@ function makeMaster(id, status, products, log) {
       widthTop: '', widthBottom: '',
       thicknessTop: '', thicknessBottom: '',
       style: [], finishing: [], profile: [], headType: [], shankType: [],
+      centerShape: [], centerCarat: [],
       estWeight: '', confWeight: ''
     },
+    // linked vendors: { name, sku, specSheet, notes }
+    // empty = made in house; multiple vendors allowed
+    vendors: [],
     products,
     log: log || []
   };
@@ -184,6 +204,18 @@ const MASTERS = [
     ])
 ];
 
+// Vendors for the hand-authored masters (STA22-4 stays in house)
+MASTERS[0].vendors = [
+  { name: 'A&M Casting', sku: 'AMC-4471', specSheet: 'STA15-1_specsheet_v3.pdf',
+    notes: 'Milgrain must match the approved sample ring (May 2026).' }
+];
+MASTERS[2].vendors = [
+  { name: 'Golden Source Co.', sku: 'GS-20388', specSheet: 'STA31-2_specsheet.pdf',
+    notes: 'Halo stones set before rhodium; ship unpolished.' },
+  { name: 'Meira Jewelry', sku: 'MJ-STA31-2B', specSheet: '',
+    notes: '' }
+];
+
 // Product types + specs for the hand-authored masters
 MASTERS[0].productType = 'Matching Band/Stackable';
 MASTERS[1].productType = 'Engagement Ring';
@@ -203,6 +235,7 @@ Object.assign(MASTERS[1].specs, {  // STA22-4
   thicknessTop: '1.60', thicknessBottom: '1.60',
   style: ['Solitaire'], finishing: ['Brushed', 'Polished'],
   profile: ['Flat'], headType: ['4-Prong'], shankType: ['Cathedral'],
+  centerShape: ['Round'], centerCarat: ['1.00 ct'],
   estWeight: '3.60', confWeight: ''
 });
 Object.assign(MASTERS[2].specs, {  // STA31-2
@@ -210,6 +243,7 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
   thicknessTop: '2.00', thicknessBottom: '1.70',
   style: ['Halo', 'Split Shank'], finishing: ['Polished', 'Hammered'],
   profile: ['Dome'], headType: ['Halo'], shankType: ['Non Cathedral'],
+  centerShape: ['Oval', 'Cushion'], centerCarat: ['1.50 ct'],
   estWeight: '5.30', confWeight: '5.18'
 });
 
@@ -264,6 +298,24 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
     const master = makeMaster(id, status, buildProducts(id, metals, perMetal), log);
     master.productType = pick(OPTION_CONFIG.productTypes).name;
 
+    // roughly half the masters are vendor-made, occasionally by two vendors
+    if (rnd() < 0.5) {
+      const vendorSku = name =>
+        `${name.replace(/[^A-Z]/g, '').slice(0, 3)}-${1000 + Math.floor(rnd() * 9000)}`;
+      const v1 = pick(OPTION_CONFIG.vendors);
+      master.vendors.push({
+        name: v1, sku: vendorSku(v1),
+        specSheet: rnd() < 0.7 ? `${id}_specsheet.pdf` : '',
+        notes: ''
+      });
+      if (rnd() < 0.25) {
+        const v2 = pick(OPTION_CONFIG.vendors);
+        if (v2 !== v1) {
+          master.vendors.push({ name: v2, sku: vendorSku(v2), specSheet: '', notes: '' });
+        }
+      }
+    }
+
     // fill in design specs (drafts may not have them yet)
     if (status !== 'draft') {
       // one value per category, sometimes a second one
@@ -288,6 +340,8 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
         profile: pickMulti(SPEC_OPTIONS.profile),
         headType: pickMulti(SPEC_OPTIONS.headType),
         shankType: [pick(SPEC_OPTIONS.shankType)],
+        centerShape: master.productType === 'Engagement Ring' ? pickMulti(SPEC_OPTIONS.centerShape) : [],
+        centerCarat: master.productType === 'Engagement Ring' ? [pick(SPEC_OPTIONS.centerCarat)] : [],
         estWeight: est.toFixed(2),
         confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : ''
       };
