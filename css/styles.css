@@ -431,6 +431,8 @@ select.text-input { width: 241px; }
 
 /* multi-select dropdowns (attribute categories) */
 .multi-select { position: relative; width: 225px; }
+.pt-filter { width: 200px; }
+.pt-filter .ms-display { padding-top: 7px; padding-bottom: 7px; }
 .ms-display {
   width: 100%;
   text-align: left;
@@ -524,6 +526,31 @@ select.text-input { width: 241px; }
   margin-left: 6px;
 }
 .option-chip .chip-x:hover { color: #d00; }
+
+/* ===== Vendor tab ===== */
+.vendor-inhouse-note { font-size: 12px; color: #777; padding: 6px 0 14px; }
+.vendor-block {
+  border: 1px solid #e0e0e0;
+  padding: 14px 16px 6px;
+  margin-bottom: 14px;
+  background: #fafafa;
+}
+.vendor-block-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  border-bottom: 1px solid #e5e5e5;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+}
+.vendor-name { font-weight: bold; font-size: 13px; }
+.vendor-unlink { color: #a33; font-size: 11px; text-decoration: none; }
+.vendor-unlink:hover { text-decoration: underline; }
+.vendor-sheet-name { font-size: 12px; margin-bottom: 6px; }
+.vendor-sheet-name.empty { color: #999; font-style: italic; }
+.vendor-notes { height: 70px; }
+.vendor-add-row { margin-top: 4px; }
+.vendor-add-row select { width: 225px; }
 
 /* ===== Edit history in the detailed view ===== */
 .modal-log {

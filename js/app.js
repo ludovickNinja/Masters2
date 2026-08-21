@@ -49,6 +49,7 @@
   // ---- List state ----
   let statusFilter = null;     // null = nothing loaded | 'all' | 'draft' | 'review' | 'confirmed'
   let searchTerm   = '';
+  let ptFilter     = [];       // product type filter (multi-select)
   let currentPage  = 1;
   let sortKey      = 'id';     // 'id' | 'status'
   let sortAsc      = true;
@@ -56,7 +57,7 @@
   let lastResult   = null;     // last page payload from the api
   let loadToken    = 0;        // guards against out-of-order responses
 
-  const listActive = () => statusFilter !== null || searchTerm !== '';
+  const listActive = () => statusFilter !== null || searchTerm !== '' || ptFilter.length > 0;
 
   // ---- Status counts line (clickable filters) ----
   function renderCounts() {
@@ -105,6 +106,7 @@
     const result = await api.fetchMasters({
       status: statusFilter || 'all',
       query: searchTerm,
+      productTypes: ptFilter,
       page: currentPage,
       sortKey, sortAsc
     });
@@ -304,9 +306,22 @@
   });
   searchBtn.addEventListener('click', () => { clearTimeout(searchTimer); applySearch(); });
 
+  // product type filter: reload on every selection change
+  document.getElementById('ptFilter').addEventListener('ms-change', () => {
+    ptFilter = multiSelects.ptFilter.get();
+    currentPage = 1;
+    if (!listActive()) {
+      backToDefault();
+      return;
+    }
+    loadPage();
+  });
+
   function backToDefault() {
     statusFilter = null;
     searchTerm = '';
+    ptFilter = [];
+    if (multiSelects.ptFilter) multiSelects.ptFilter.set([]);
     currentPage = 1;
     lastResult = null;
     loadToken++;               // cancel any in-flight load
@@ -363,6 +378,144 @@
     tooltip.hidden = true;
   }
 
+  // ---- Vendor tab (working copy; applied to the master on Save) ----
+  const vendorList = document.getElementById('vendorList');
+  const vendorAddSelect = document.getElementById('vendorAddSelect');
+  const vendorAddBtn = document.getElementById('vendorAddBtn');
+  let vendorWork = [];   // [{ name, sku, specSheet, notes }]
+
+  function refreshVendorAddSelect() {
+    const linked = vendorWork.map(v => v.name);
+    const available = OPTION_CONFIG.vendors.filter(v => !linked.includes(v));
+    vendorAddSelect.innerHTML = '';
+    if (!available.length) {
+      const o = document.createElement('option');
+      o.textContent = 'All vendors linked';
+      vendorAddSelect.appendChild(o);
+    } else {
+      available.forEach(name => {
+        const o = document.createElement('option');
+        o.value = name;
+        o.textContent = name;
+        vendorAddSelect.appendChild(o);
+      });
+    }
+    vendorAddSelect.disabled = !available.length;
+    vendorAddBtn.disabled = !available.length;
+  }
+
+  function renderVendorList() {
+    vendorList.innerHTML = '';
+
+    if (!vendorWork.length) {
+      const p = document.createElement('p');
+      p.className = 'vendor-inhouse-note';
+      p.textContent = 'No vendors linked - this master is made in house.';
+      vendorList.appendChild(p);
+    }
+
+    vendorWork.forEach(vendor => {
+      const block = document.createElement('div');
+      block.className = 'vendor-block';
+
+      const header = document.createElement('div');
+      header.className = 'vendor-block-header';
+      const name = document.createElement('span');
+      name.className = 'vendor-name';
+      name.textContent = vendor.name;
+      header.appendChild(name);
+      const unlink = document.createElement('a');
+      unlink.href = '#';
+      unlink.className = 'vendor-unlink';
+      unlink.textContent = 'unlink';
+      unlink.addEventListener('click', e => {
+        e.preventDefault();
+        if (!confirm(`Unlink vendor "${vendor.name}" from this master?`)) return;
+        vendorWork = vendorWork.filter(v => v !== vendor);
+        renderVendorList();
+        refreshVendorAddSelect();
+      });
+      header.appendChild(unlink);
+      block.appendChild(header);
+
+      const grid = document.createElement('div');
+      grid.className = 'spec-grid';
+
+      // spec sheet for this style at this vendor
+      const sheetRow = document.createElement('div');
+      sheetRow.className = 'form-row';
+      const sheetLabel = document.createElement('label');
+      sheetLabel.className = 'field-label';
+      sheetLabel.textContent = 'Spec Sheet:';
+      sheetRow.appendChild(sheetLabel);
+      const sheetName = document.createElement('div');
+      sheetName.className = 'vendor-sheet-name';
+      sheetName.textContent = vendor.specSheet || 'No spec sheet on file';
+      if (!vendor.specSheet) sheetName.classList.add('empty');
+      sheetRow.appendChild(sheetName);
+      const sheetInput = document.createElement('input');
+      sheetInput.type = 'file';
+      sheetInput.accept = '.pdf,.xls,.xlsx,.doc,.docx';
+      sheetInput.addEventListener('change', () => {
+        if (sheetInput.files.length) {
+          vendor.specSheet = sheetInput.files[0].name;
+          sheetName.textContent = vendor.specSheet;
+          sheetName.classList.remove('empty');
+        }
+      });
+      sheetRow.appendChild(sheetInput);
+      grid.appendChild(sheetRow);
+
+      // vendor's own SKU for this piece
+      const skuRow = document.createElement('div');
+      skuRow.className = 'form-row';
+      const skuLabel = document.createElement('label');
+      skuLabel.className = 'field-label';
+      skuLabel.textContent = 'Vendor SKU:';
+      skuRow.appendChild(skuLabel);
+      const skuInput = document.createElement('input');
+      skuInput.type = 'text';
+      skuInput.className = 'text-input';
+      skuInput.value = vendor.sku;
+      skuInput.addEventListener('input', () => { vendor.sku = skuInput.value; });
+      skuRow.appendChild(skuInput);
+      grid.appendChild(skuRow);
+
+      block.appendChild(grid);
+
+      // design comments / specific instructions
+      const notesRow = document.createElement('div');
+      notesRow.className = 'form-row';
+      const notesLabel = document.createElement('label');
+      notesLabel.className = 'field-label';
+      notesLabel.textContent = 'Comments / Instructions:';
+      notesRow.appendChild(notesLabel);
+      const notes = document.createElement('textarea');
+      notes.className = 'text-area vendor-notes';
+      notes.placeholder = 'Specific instructions about this design for this vendor...';
+      notes.value = vendor.notes;
+      notes.addEventListener('input', () => { vendor.notes = notes.value; });
+      notesRow.appendChild(notes);
+      block.appendChild(notesRow);
+
+      vendorList.appendChild(block);
+    });
+  }
+
+  vendorAddBtn.addEventListener('click', () => {
+    const name = vendorAddSelect.value;
+    if (!name) return;
+    vendorWork.push({ name, sku: '', specSheet: '', notes: '' });
+    renderVendorList();
+    refreshVendorAddSelect();
+  });
+
+  function renderVendorTab(master) {
+    vendorWork = (master.vendors || []).map(v => ({ ...v }));
+    renderVendorList();
+    refreshVendorAddSelect();
+  }
+
   // ---- Edit modal ----
   let editingMaster = null;
 
@@ -377,7 +530,9 @@
     { key: 'finishing',       label: 'Finishing',          elId: 'fFinishing', type: 'multi' },
     { key: 'profile',         label: 'Profile',            elId: 'fProfile',   type: 'multi' },
     { key: 'headType',        label: 'Head Type',          elId: 'fHeadType',  type: 'multi' },
-    { key: 'shankType',       label: 'Shank Type',         elId: 'fShankType', type: 'multi' },
+    { key: 'shankType',       label: 'Shank Type',         elId: 'fShankType',   type: 'multi' },
+    { key: 'centerShape',     label: 'Center Shape',       elId: 'fCenterShape', type: 'multi' },
+    { key: 'centerCarat',     label: 'Center Stone Carat Size', elId: 'fCenterCarat', type: 'multi' },
     { key: 'estWeight',       label: 'Estimated Weight',   elId: 'fEstWeight' },
     { key: 'confWeight',      label: 'Confirmed Weight',   elId: 'fConfWeight' }
   ];
@@ -396,7 +551,11 @@
   // Options Administration module changes the available values
   function buildMultiSelect(root) {
     root.innerHTML = '';
-    const options = (SPEC_OPTIONS[root.dataset.options] || []).slice();
+    // options come from an attribute category, or the product type list
+    const options = root.dataset.options === 'productTypes'
+      ? OPTION_CONFIG.productTypes.map(p => p.name)
+      : (SPEC_OPTIONS[root.dataset.options] || []).slice();
+    const placeholder = root.dataset.placeholder || '- Select -';
     let selected = [];
 
     const btn = document.createElement('button');
@@ -408,7 +567,7 @@
     panel.addEventListener('click', e => e.stopPropagation());
 
     function updateDisplay() {
-      btn.textContent = selected.length ? selected.join(', ') : '- Select -';
+      btn.textContent = selected.length ? selected.join(', ') : placeholder;
       btn.title = btn.textContent;
     }
 
@@ -422,6 +581,7 @@
         selected = options.filter(o =>
           Array.from(panel.querySelectorAll('input:checked')).some(c => c.value === o));
         updateDisplay();
+        root.dispatchEvent(new CustomEvent('ms-change'));
       });
       label.appendChild(cb);
       label.appendChild(document.createTextNode(' ' + opt));
@@ -517,6 +677,7 @@
     });
     closeAllMultiPanels();
     document.getElementById('jobBagPreview').innerHTML = jobBagSVG();
+    renderVendorTab(master);
     renderModalLog(master);
     selectModalTab('tabProductionInstructions');   // always open on tab 1
     editModal.hidden = false;
@@ -595,7 +756,9 @@
     SPEC_FIELDS.forEach(f => {
       if (f.type === 'multi') {
         const values = multiSelects[f.elId].get();
-        if (values.join('|') !== (m.specs[f.key] || []).join('|')) {
+        // compare as sets: the control normalizes to option-list order
+        const norm = arr => (arr || []).slice().sort().join('|');
+        if (norm(values) !== norm(m.specs[f.key])) {
           changed.push(f.label);
           m.specs[f.key] = values;
         }
@@ -608,6 +771,27 @@
       }
     });
     if (changed.length) addLog(m, 'Edited: ' + changed.join(', '));
+
+    // vendor links (Vendor tab): log links, unlinks, and per-vendor edits
+    const oldVendors = m.vendors || [];
+    const oldNames = oldVendors.map(v => v.name);
+    const newNames = vendorWork.map(v => v.name);
+    vendorWork.forEach(v => {
+      if (!oldNames.includes(v.name)) addLog(m, `Linked vendor: ${v.name}`);
+    });
+    oldVendors.forEach(v => {
+      if (!newNames.includes(v.name)) addLog(m, `Unlinked vendor: ${v.name}`);
+    });
+    vendorWork.forEach(v => {
+      const old = oldVendors.find(o => o.name === v.name);
+      if (!old) return;
+      const vendorChanged = [];
+      if (old.sku !== v.sku) vendorChanged.push('Vendor SKU');
+      if (old.specSheet !== v.specSheet) vendorChanged.push('Spec Sheet');
+      if (old.notes !== v.notes) vendorChanged.push('Comments');
+      if (vendorChanged.length) addLog(m, `Updated vendor ${v.name}: ${vendorChanged.join(', ')}`);
+    });
+    m.vendors = vendorWork.map(v => ({ ...v }));
 
     const newStatus = document.getElementById('fStatus').value;
     if (newStatus !== m.status) {
@@ -777,17 +961,85 @@
     });
   }
 
+  function renderVendorAdmin() {
+    const container = document.getElementById('vendorAdminList');
+    container.innerHTML = '';
+    const block = document.createElement('div');
+    block.className = 'option-admin-block';
+
+    const chips = document.createElement('div');
+    chips.className = 'option-chips';
+    OPTION_CONFIG.vendors.forEach(name => {
+      const chip = document.createElement('span');
+      chip.className = 'option-chip';
+      chip.textContent = name;
+      const x = document.createElement('a');
+      x.href = '#';
+      x.className = 'chip-x';
+      x.textContent = '×';
+      x.title = `Remove "${name}"`;
+      x.addEventListener('click', e => {
+        e.preventDefault();
+        const inUse = MASTERS.filter(m => (m.vendors || []).some(v => v.name === name)).length;
+        const warning = inUse
+          ? `"${name}" is linked to ${inUse} master(s). Remove it from the vendor list anyway? Existing links are kept.`
+          : `Remove vendor "${name}"?`;
+        if (!confirm(warning)) return;
+        OPTION_CONFIG.vendors.splice(OPTION_CONFIG.vendors.indexOf(name), 1);
+        renderVendorAdmin();
+      });
+      chip.appendChild(x);
+      chips.appendChild(chip);
+    });
+    block.appendChild(chips);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'options-add-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'text-input';
+    input.placeholder = 'Add vendor...';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-dark';
+    btn.textContent = 'Add';
+    function addVendor() {
+      const value = input.value.trim();
+      if (!value) return;
+      if (OPTION_CONFIG.vendors.some(v => v.toLowerCase() === value.toLowerCase())) {
+        alert(`"${value}" is already in the vendor list.`);
+        return;
+      }
+      OPTION_CONFIG.vendors.push(value);
+      input.value = '';
+      renderVendorAdmin();
+    }
+    btn.addEventListener('click', addVendor);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addVendor(); }
+    });
+    addRow.appendChild(input);
+    addRow.appendChild(btn);
+    block.appendChild(addRow);
+
+    container.appendChild(block);
+  }
+
   function openOptionsModal() {
     renderPtMatrix();
     renderCategoryLists();
+    renderVendorAdmin();
     optionsModal.hidden = false;
     optionsModal.querySelector('.modal').scrollTop = 0;
   }
   function closeOptionsModal() {
     optionsModal.hidden = true;
-    // the edit modal controls feed from the config: rebuild them
+    // the edit modal controls and filters feed from the config: rebuild them
     rebuildAllMultiSelects();
     refreshProductTypeSelect();
+    // restore the product type filter selection (dropping removed types)
+    multiSelects.ptFilter.set(ptFilter);
+    ptFilter = multiSelects.ptFilter.get();
   }
   document.getElementById('navMenuLink').addEventListener('click', e => {
     e.preventDefault();

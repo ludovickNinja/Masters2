@@ -37,6 +37,8 @@
         <a href="#" class="action-link" id="addSideDiamondLink">Add a new side diamond template</a>
       </div>
       <div class="search-box">
+        <div class="multi-select pt-filter" id="ptFilter"
+          data-options="productTypes" data-placeholder="All Product Types"></div>
         <input type="text" id="searchInput" placeholder="Enter Template ID" autocomplete="off">
         <button class="btn btn-primary" id="searchBtn">SEARCH</button>
         <button class="btn btn-dark" id="resetBtn">RESET</button>
@@ -214,6 +216,14 @@
               <label class="field-label">Shank Type:</label>
               <div class="multi-select" id="fShankType" data-options="shankType"></div>
             </div>
+            <div class="form-row" data-category="centerShape">
+              <label class="field-label">Center Shape:</label>
+              <div class="multi-select" id="fCenterShape" data-options="centerShape"></div>
+            </div>
+            <div class="form-row" data-category="centerCarat">
+              <label class="field-label">Center Stone Carat Size:</label>
+              <div class="multi-select" id="fCenterCarat" data-options="centerCarat"></div>
+            </div>
           </div>
 
           <div class="spec-section-title">Weight</div>
@@ -230,9 +240,17 @@
 
         </div>
 
-        <!-- Tab 3: Vendor (to be defined) -->
+        <!-- Tab 3: Vendor (linked vendors, spec sheets, SKUs, instructions) -->
         <div class="tab-panel" id="tabVendor" hidden>
-          <p class="tab-placeholder">Vendor &mdash; this section will be defined next.</p>
+          <div class="spec-section-title">Linked Vendors</div>
+          <p class="spec-note">Not every master has a vendor (some are made in house);
+            a master can be linked to multiple vendors. The vendor list is controlled
+            in Options Administration (MENU).</p>
+          <div id="vendorList"></div>
+          <div class="options-add-row vendor-add-row">
+            <select id="vendorAddSelect" class="text-input"></select>
+            <button type="button" class="btn btn-dark" id="vendorAddBtn">Link Vendor</button>
+          </div>
         </div>
 
         <div class="form-buttons">
@@ -269,6 +287,11 @@
 
       <div class="spec-section-title">Attribute Selection Box Options</div>
       <div id="categoryOptionLists"></div>
+
+      <div class="spec-section-title">Vendors</div>
+      <p class="options-intro">The list of vendors that can be linked to a master
+        (Vendor tab of the detailed view).</p>
+      <div id="vendorAdminList"></div>
 
       <div class="form-buttons">
         <button type="button" class="btn btn-primary" id="optionsDoneBtn">Done</button>
