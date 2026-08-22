@@ -216,13 +216,14 @@
               <label class="field-label">Shank Type:</label>
               <div class="multi-select" id="fShankType" data-options="shankType"></div>
             </div>
-            <div class="form-row" data-category="centerShape">
-              <label class="field-label">Center Shape:</label>
-              <div class="multi-select" id="fCenterShape" data-options="centerShape"></div>
-            </div>
-            <div class="form-row" data-category="centerCarat">
-              <label class="field-label">Center Stone Carat Size:</label>
-              <div class="multi-select" id="fCenterCarat" data-options="centerCarat"></div>
+            <div class="form-row spec-full" data-category="centerStone">
+              <label class="field-label">Center Stone (Shape + Carat Size it was made for):</label>
+              <div class="cs-add-row">
+                <select id="csShapeSelect" class="text-input"></select>
+                <select id="csCaratSelect" class="text-input"></select>
+                <button type="button" class="btn btn-dark" id="csAddBtn">Add</button>
+              </div>
+              <div class="option-chips" id="csList"></div>
             </div>
           </div>
 
@@ -230,11 +231,17 @@
           <div class="spec-grid">
             <div class="form-row">
               <label class="field-label" for="fEstWeight">Estimated Weight (g):</label>
-              <input type="number" step="0.01" min="0" id="fEstWeight" class="text-input spec-input">
+              <div class="weight-row">
+                <input type="number" step="0.01" min="0" id="fEstWeight" class="text-input spec-input">
+                <select id="fEstWeightKarat" class="text-input karat-select"></select>
+              </div>
             </div>
             <div class="form-row">
               <label class="field-label" for="fConfWeight">Confirmed Weight (g):</label>
-              <input type="number" step="0.01" min="0" id="fConfWeight" class="text-input spec-input">
+              <div class="weight-row">
+                <input type="number" step="0.01" min="0" id="fConfWeight" class="text-input spec-input">
+                <select id="fConfWeightKarat" class="text-input karat-select"></select>
+              </div>
             </div>
           </div>
 
