@@ -35,23 +35,29 @@ const OPTION_CONFIG = {
       'None', '4-Prong', '6-Prong', 'Bezel', 'Semi-Bezel', 'Halo', 'Trellis', 'Cathedral'] },
     shankType: { label: 'Shank Type', options: [
       'Cathedral', 'Non Cathedral', 'Euro Shank'] },
-    centerShape: { label: 'Center Shape', options: [
-      'Round', 'Oval', 'Cushion', 'Princess', 'Emerald', 'Radiant',
-      'Pear', 'Marquise', 'Asscher', 'Heart'] },
-    centerCarat: { label: 'Center Stone Carat Size', options: [
-      '0.25 ct', '0.50 ct', '0.75 ct', '1.00 ct', '1.25 ct',
-      '1.50 ct', '2.00 ct', '2.50 ct', '3.00 ct'] }
+    // center shape and carat size are managed together: a master's center
+    // stone is always a shape PLUS the carat size it was made for
+    centerStone: { label: 'Center Stone',
+      shapes: [
+        'Round', 'Oval', 'Cushion', 'Princess', 'Emerald', 'Radiant',
+        'Pear', 'Marquise', 'Asscher', 'Heart'],
+      carats: [
+        '0.25 ct', '0.50 ct', '0.75 ct', '1.00 ct', '1.25 ct',
+        '1.50 ct', '2.00 ct', '2.50 ct', '3.00 ct'] }
   },
   // product types + the attribute categories linked to each
-  // (Center Shape / Center Stone Carat Size are Engagement Ring specific)
+  // (Center Stone - shape + carat size together - is Engagement Ring specific)
   productTypes: [
-    { name: 'Engagement Ring',         categories: ['style', 'finishing', 'profile', 'headType', 'shankType', 'centerShape', 'centerCarat'] },
+    { name: 'Engagement Ring',         categories: ['style', 'finishing', 'profile', 'headType', 'shankType', 'centerStone'] },
     { name: 'Matching Band/Stackable', categories: ['style', 'finishing', 'profile'] },
     { name: 'Wedding Band',            categories: ['finishing', 'profile'] },
     { name: 'Fashion Ring',            categories: ['style', 'finishing', 'profile', 'headType'] },
     { name: 'Signet Ring',             categories: ['finishing', 'profile'] },
     { name: 'Earrings',                categories: ['finishing', 'headType'] }
   ],
+  // karat/material options for weights (capture only here; material
+  // conversion is handled by a different module)
+  materials: ['925', '10K', '14K', '18K', 'PT950', 'PD950', '18PD'],
   // vendors we currently work with (masters without a vendor are made in house)
   vendors: [
     'A&M Casting',
@@ -64,8 +70,10 @@ const OPTION_CONFIG = {
 };
 
 // Convenience alias: SPEC_OPTIONS[key] -> live options array of that category
+// (centerStone is excluded: it holds paired shape/carat lists, not one list)
 const SPEC_OPTIONS = {};
 Object.keys(OPTION_CONFIG.categories).forEach(k => {
+  if (!OPTION_CONFIG.categories[k].options) return;
   Object.defineProperty(SPEC_OPTIONS, k, {
     get: () => OPTION_CONFIG.categories[k].options,
     enumerable: true
@@ -159,8 +167,9 @@ function makeMaster(id, status, products, log) {
       widthTop: '', widthBottom: '',
       thicknessTop: '', thicknessBottom: '',
       style: [], finishing: [], profile: [], headType: [], shankType: [],
-      centerShape: [], centerCarat: [],
-      estWeight: '', confWeight: ''
+      centerStones: [],   // [{ shape, carat }] - shape + the size it was made for
+      estWeight: '', estWeightKarat: '',
+      confWeight: '', confWeightKarat: ''
     },
     // linked vendors: { name, sku, specSheet, notes }
     // empty = made in house; multiple vendors allowed
@@ -228,23 +237,23 @@ Object.assign(MASTERS[0].specs, {  // STA15-1
   thicknessTop: '1.80', thicknessBottom: '1.55',
   style: ['Straight', 'Wide Band'], finishing: ['Polished'],
   profile: ['Comfort Fit'], headType: ['None'], shankType: ['Non Cathedral'],
-  estWeight: '4.10', confWeight: '4.25'
+  estWeight: '4.10', estWeightKarat: '14K', confWeight: '4.25', confWeightKarat: '14K'
 });
 Object.assign(MASTERS[1].specs, {  // STA22-4
   widthTop: '2.40', widthBottom: '2.40',
   thicknessTop: '1.60', thicknessBottom: '1.60',
   style: ['Solitaire'], finishing: ['Brushed', 'Polished'],
   profile: ['Flat'], headType: ['4-Prong'], shankType: ['Cathedral'],
-  centerShape: ['Round'], centerCarat: ['1.00 ct'],
-  estWeight: '3.60', confWeight: ''
+  centerStones: [{ shape: 'Round', carat: '1.00 ct' }],
+  estWeight: '3.60', estWeightKarat: '14K', confWeight: '', confWeightKarat: ''
 });
 Object.assign(MASTERS[2].specs, {  // STA31-2
   widthTop: '4.00', widthBottom: '3.10',
   thicknessTop: '2.00', thicknessBottom: '1.70',
   style: ['Halo', 'Split Shank'], finishing: ['Polished', 'Hammered'],
   profile: ['Dome'], headType: ['Halo'], shankType: ['Non Cathedral'],
-  centerShape: ['Oval', 'Cushion'], centerCarat: ['1.50 ct'],
-  estWeight: '5.30', confWeight: '5.18'
+  centerStones: [{ shape: 'Oval', carat: '1.50 ct' }, { shape: 'Cushion', carat: '1.50 ct' }],
+  estWeight: '5.30', estWeightKarat: '18K', confWeight: '5.18', confWeightKarat: '18K'
 });
 
 /* ---- Generated masters (~200 total) --------------------------
@@ -340,11 +349,16 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
         profile: pickMulti(SPEC_OPTIONS.profile),
         headType: pickMulti(SPEC_OPTIONS.headType),
         shankType: [pick(SPEC_OPTIONS.shankType)],
-        centerShape: master.productType === 'Engagement Ring' ? pickMulti(SPEC_OPTIONS.centerShape) : [],
-        centerCarat: master.productType === 'Engagement Ring' ? [pick(SPEC_OPTIONS.centerCarat)] : [],
+        centerStones: master.productType === 'Engagement Ring'
+          ? pickMulti(OPTION_CONFIG.categories.centerStone.shapes).map(shape =>
+              ({ shape, carat: pick(OPTION_CONFIG.categories.centerStone.carats) }))
+          : [],
         estWeight: est.toFixed(2),
-        confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : ''
+        estWeightKarat: pick(['14K', '14K', '14K', '10K', '18K', '925']),
+        confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : '',
+        confWeightKarat: ''
       };
+      if (master.specs.confWeight) master.specs.confWeightKarat = master.specs.estWeightKarat;
     }
     MASTERS.push(master);
   }

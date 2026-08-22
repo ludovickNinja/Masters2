@@ -531,11 +531,95 @@
     { key: 'profile',         label: 'Profile',            elId: 'fProfile',   type: 'multi' },
     { key: 'headType',        label: 'Head Type',          elId: 'fHeadType',  type: 'multi' },
     { key: 'shankType',       label: 'Shank Type',         elId: 'fShankType',   type: 'multi' },
-    { key: 'centerShape',     label: 'Center Shape',       elId: 'fCenterShape', type: 'multi' },
-    { key: 'centerCarat',     label: 'Center Stone Carat Size', elId: 'fCenterCarat', type: 'multi' },
     { key: 'estWeight',       label: 'Estimated Weight',   elId: 'fEstWeight' },
-    { key: 'confWeight',      label: 'Confirmed Weight',   elId: 'fConfWeight' }
+    { key: 'estWeightKarat',  label: 'Estimated Weight Karat', elId: 'fEstWeightKarat' },
+    { key: 'confWeight',      label: 'Confirmed Weight',   elId: 'fConfWeight' },
+    { key: 'confWeightKarat', label: 'Confirmed Weight Karat', elId: 'fConfWeightKarat' }
   ];
+
+  // ---- Center Stone pairs (shape + the carat size it was made for) ----
+  const csShapeSelect = document.getElementById('csShapeSelect');
+  const csCaratSelect = document.getElementById('csCaratSelect');
+  const csList = document.getElementById('csList');
+  let centerStoneWork = [];   // [{ shape, carat }]
+
+  function refreshCenterStoneSelects() {
+    const cs = OPTION_CONFIG.categories.centerStone;
+    [[csShapeSelect, cs.shapes, '- Shape -'], [csCaratSelect, cs.carats, '- Carat -']]
+      .forEach(([select, values, placeholder]) => {
+        select.innerHTML = '';
+        const blank = document.createElement('option');
+        blank.value = '';
+        blank.textContent = placeholder;
+        select.appendChild(blank);
+        values.forEach(v => {
+          const o = document.createElement('option');
+          o.value = v;
+          o.textContent = v;
+          select.appendChild(o);
+        });
+      });
+  }
+  refreshCenterStoneSelects();
+
+  function renderCenterStoneList() {
+    csList.innerHTML = '';
+    centerStoneWork.forEach(pair => {
+      const chip = document.createElement('span');
+      chip.className = 'option-chip';
+      chip.textContent = `${pair.shape} @ ${pair.carat}`;
+      const x = document.createElement('a');
+      x.href = '#';
+      x.className = 'chip-x';
+      x.textContent = '×';
+      x.title = 'Remove';
+      x.addEventListener('click', e => {
+        e.preventDefault();
+        centerStoneWork = centerStoneWork.filter(p => p !== pair);
+        renderCenterStoneList();
+      });
+      chip.appendChild(x);
+      csList.appendChild(chip);
+    });
+  }
+
+  document.getElementById('csAddBtn').addEventListener('click', () => {
+    const shape = csShapeSelect.value;
+    const carat = csCaratSelect.value;
+    if (!shape || !carat) {
+      alert('Select both a shape and the carat size it was made for.');
+      return;
+    }
+    if (centerStoneWork.some(p => p.shape === shape && p.carat === carat)) {
+      alert(`${shape} @ ${carat} is already on this master.`);
+      return;
+    }
+    centerStoneWork.push({ shape, carat });
+    csShapeSelect.value = '';
+    csCaratSelect.value = '';
+    renderCenterStoneList();
+  });
+
+  // ---- Weight karat selects (capture only; conversion is another module) ----
+  function refreshKaratSelects() {
+    ['fEstWeightKarat', 'fConfWeightKarat'].forEach(id => {
+      const select = document.getElementById(id);
+      const current = select.value;
+      select.innerHTML = '';
+      const blank = document.createElement('option');
+      blank.value = '';
+      blank.textContent = '- Karat -';
+      select.appendChild(blank);
+      OPTION_CONFIG.materials.forEach(code => {
+        const o = document.createElement('option');
+        o.value = code;
+        o.textContent = code;
+        select.appendChild(o);
+      });
+      select.value = current;
+    });
+  }
+  refreshKaratSelects();
 
   // ---- Multi-select dropdowns (checkbox panels), one per attribute category ----
   const multiSelects = {};   // elId -> { get(), set(values) }
@@ -671,10 +755,14 @@
     document.getElementById('fFiveAtWork').value = master.fiveAtWork;
     document.getElementById('fKutez').value = master.kutez;
     document.getElementById('fSpecialInfo').value = master.specialInfo;
+    refreshKaratSelects();
     SPEC_FIELDS.forEach(f => {
       if (f.type === 'multi') multiSelects[f.elId].set(master.specs[f.key]);
       else document.getElementById(f.elId).value = master.specs[f.key];
     });
+    refreshCenterStoneSelects();
+    centerStoneWork = (master.specs.centerStones || []).map(p => ({ ...p }));
+    renderCenterStoneList();
     closeAllMultiPanels();
     document.getElementById('jobBagPreview').innerHTML = jobBagSVG();
     renderVendorTab(master);
@@ -770,6 +858,15 @@
         }
       }
     });
+    // center stone pairs (compare as sets of shape@carat)
+    {
+      const key = p => `${p.shape}@${p.carat}`;
+      const norm = arr => (arr || []).map(key).sort().join('|');
+      if (norm(centerStoneWork) !== norm(m.specs.centerStones)) {
+        changed.push('Center Stone');
+        m.specs.centerStones = centerStoneWork.map(p => ({ ...p }));
+      }
+    }
     if (changed.length) addLog(m, 'Edited: ' + changed.join(', '));
 
     // vendor links (Vendor tab): log links, unlinks, and per-vendor edits
@@ -894,6 +991,64 @@
     renderPtMatrix();
   });
 
+  // chip list + add box for one editable value list (used per category)
+  function buildOptionListEditor(values, listLabel, addPlaceholder) {
+    const wrap = document.createElement('div');
+
+    const chips = document.createElement('div');
+    chips.className = 'option-chips';
+    values.forEach(opt => {
+      const chip = document.createElement('span');
+      chip.className = 'option-chip';
+      chip.textContent = opt;
+      const x = document.createElement('a');
+      x.href = '#';
+      x.className = 'chip-x';
+      x.textContent = '×';
+      x.title = `Remove "${opt}"`;
+      x.addEventListener('click', e => {
+        e.preventDefault();
+        if (!confirm(`Remove option "${opt}" from ${listLabel}?`)) return;
+        values.splice(values.indexOf(opt), 1);
+        renderCategoryLists();
+      });
+      chip.appendChild(x);
+      chips.appendChild(chip);
+    });
+    wrap.appendChild(chips);
+
+    const addRow = document.createElement('div');
+    addRow.className = 'options-add-row';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'text-input';
+    input.placeholder = addPlaceholder;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'btn btn-dark';
+    btn.textContent = 'Add';
+    function addOption() {
+      const value = input.value.trim();
+      if (!value) return;
+      if (values.some(o => o.toLowerCase() === value.toLowerCase())) {
+        alert(`"${value}" is already an option of ${listLabel}.`);
+        return;
+      }
+      values.push(value);
+      input.value = '';
+      renderCategoryLists();
+    }
+    btn.addEventListener('click', addOption);
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); addOption(); }
+    });
+    addRow.appendChild(input);
+    addRow.appendChild(btn);
+    wrap.appendChild(addRow);
+
+    return wrap;
+  }
+
   function renderCategoryLists() {
     categoryOptionLists.innerHTML = '';
     Object.keys(OPTION_CONFIG.categories).forEach(key => {
@@ -906,56 +1061,28 @@
       title.textContent = cat.label;
       block.appendChild(title);
 
-      const chips = document.createElement('div');
-      chips.className = 'option-chips';
-      cat.options.forEach(opt => {
-        const chip = document.createElement('span');
-        chip.className = 'option-chip';
-        chip.textContent = opt;
-        const x = document.createElement('a');
-        x.href = '#';
-        x.className = 'chip-x';
-        x.textContent = '×';
-        x.title = `Remove "${opt}"`;
-        x.addEventListener('click', e => {
-          e.preventDefault();
-          if (!confirm(`Remove option "${opt}" from ${cat.label}?`)) return;
-          cat.options.splice(cat.options.indexOf(opt), 1);
-          renderCategoryLists();
-        });
-        chip.appendChild(x);
-        chips.appendChild(chip);
-      });
-      block.appendChild(chips);
+      if (cat.options) {
+        block.appendChild(buildOptionListEditor(cat.options, cat.label, `Add ${cat.label} option...`));
+      } else if (key === 'centerStone') {
+        // shape and carat size are managed together: one category, two lists
+        const note = document.createElement('p');
+        note.className = 'options-intro';
+        note.textContent = 'Shapes and carat sizes go together: on a master, ' +
+          'every center shape is recorded with the carat size it was made for.';
+        block.appendChild(note);
 
-      const addRow = document.createElement('div');
-      addRow.className = 'options-add-row';
-      const input = document.createElement('input');
-      input.type = 'text';
-      input.className = 'text-input';
-      input.placeholder = `Add ${cat.label} option...`;
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'btn btn-dark';
-      btn.textContent = 'Add';
-      function addOption() {
-        const value = input.value.trim();
-        if (!value) return;
-        if (cat.options.some(o => o.toLowerCase() === value.toLowerCase())) {
-          alert(`"${value}" is already an option of ${cat.label}.`);
-          return;
-        }
-        cat.options.push(value);
-        input.value = '';
-        renderCategoryLists();
+        const sub1 = document.createElement('div');
+        sub1.className = 'option-admin-subtitle';
+        sub1.textContent = 'Shapes';
+        block.appendChild(sub1);
+        block.appendChild(buildOptionListEditor(cat.shapes, 'Center Stone shapes', 'Add shape...'));
+
+        const sub2 = document.createElement('div');
+        sub2.className = 'option-admin-subtitle';
+        sub2.textContent = 'Carat Sizes';
+        block.appendChild(sub2);
+        block.appendChild(buildOptionListEditor(cat.carats, 'Center Stone carat sizes', 'Add carat size...'));
       }
-      btn.addEventListener('click', addOption);
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); addOption(); }
-      });
-      addRow.appendChild(input);
-      addRow.appendChild(btn);
-      block.appendChild(addRow);
 
       categoryOptionLists.appendChild(block);
     });
@@ -1037,6 +1164,8 @@
     // the edit modal controls and filters feed from the config: rebuild them
     rebuildAllMultiSelects();
     refreshProductTypeSelect();
+    refreshCenterStoneSelects();
+    refreshKaratSelects();
     // restore the product type filter selection (dropping removed types)
     multiSelects.ptFilter.set(ptFilter);
     ptFilter = multiSelects.ptFilter.get();
