@@ -544,28 +544,31 @@
   let piWork = [];   // [{ step, text }]
 
   function refreshPiAddSelect() {
-    const present = piWork.map(e => e.step);
-    const available = OPTION_CONFIG.productionSteps.filter(s => !present.includes(s));
+    // a step can be added multiple times (e.g. a ring polished twice),
+    // so every configured step is always available
     piAddSelect.innerHTML = '';
-    if (!available.length) {
+    OPTION_CONFIG.productionSteps.forEach(step => {
       const o = document.createElement('option');
-      o.textContent = 'All steps added';
+      o.value = step;
+      o.textContent = step;
       piAddSelect.appendChild(o);
-    } else {
-      available.forEach(step => {
-        const o = document.createElement('option');
-        o.value = step;
-        o.textContent = step;
-        piAddSelect.appendChild(o);
-      });
-    }
-    piAddSelect.disabled = !available.length;
-    piAddBtn.disabled = !available.length;
+    });
+    piAddSelect.disabled = false;
+    piAddBtn.disabled = false;
   }
 
   function renderPiList() {
     piList.innerHTML = '';
+    // number the label when a step appears more than once ("Polishing (2):")
+    const stepCounts = {};
+    piWork.forEach(e => { stepCounts[e.step] = (stepCounts[e.step] || 0) + 1; });
+    const seen = {};
     piWork.forEach((entry, index) => {
+      seen[entry.step] = (seen[entry.step] || 0) + 1;
+      const labelText = stepCounts[entry.step] > 1
+        ? `${entry.step} (${seen[entry.step]}):`
+        : `${entry.step}:`;
+
       const row = document.createElement('div');
       row.className = 'form-row';
 
@@ -573,7 +576,7 @@
       header.className = 'pi-entry-header';
       const label = document.createElement('label');
       label.className = 'field-label';
-      label.textContent = entry.step + ':';
+      label.textContent = labelText;
       header.appendChild(label);
 
       const controls = document.createElement('span');
@@ -845,7 +848,9 @@
     productTypeSelect.value = master.productType || '';
     updateSpecCategoryVisibility();
     document.getElementById('fJobBagMessage').value = master.jobBagMessage;
-    piWork = (master.instructions || []).map(e => ({ ...e }));
+    // _id ties a working entry back to its original (added entries have none),
+    // so the save diff tracks duplicates of the same step precisely
+    piWork = (master.instructions || []).map((e, i) => ({ step: e.step, text: e.text, _id: i }));
     renderPiList();
     refreshPiAddSelect();
     document.getElementById('fSpecialInfo').value = master.specialInfo;
@@ -948,25 +953,27 @@
         }
       }
     });
-    // production instruction entries: log added/removed steps, diff texts
+    // production instruction entries: a step can appear several times, so
+    // the diff tracks entries by identity (_id set when the modal opened)
     {
-      const oldSteps = (m.instructions || []).map(e => e.step);
-      const newSteps = piWork.map(e => e.step);
+      const oldEntries = m.instructions || [];
       piWork.forEach(e => {
-        if (!oldSteps.includes(e.step)) addLog(m, `Added production step: ${e.step}`);
+        if (e._id === undefined) addLog(m, `Added production step: ${e.step}`);
       });
-      (m.instructions || []).forEach(e => {
-        if (!newSteps.includes(e.step)) addLog(m, `Removed production step: ${e.step}`);
+      const keptIds = piWork.filter(e => e._id !== undefined).map(e => e._id);
+      oldEntries.forEach((e, i) => {
+        if (!keptIds.includes(i)) addLog(m, `Removed production step: ${e.step}`);
       });
       piWork.forEach(e => {
-        const old = (m.instructions || []).find(o => o.step === e.step);
-        if (old && old.text !== e.text) changed.push(e.step);
+        if (e._id !== undefined && oldEntries[e._id] &&
+            oldEntries[e._id].text !== e.text && !changed.includes(e.step)) {
+          changed.push(e.step);
+        }
       });
-      // order change of the steps present in both versions
-      const oldCommon = oldSteps.filter(s => newSteps.includes(s)).join('|');
-      const newCommon = newSteps.filter(s => oldSteps.includes(s)).join('|');
-      if (oldCommon !== newCommon) addLog(m, 'Reordered production steps');
-      m.instructions = piWork.map(e => ({ ...e }));
+      // surviving entries out of their original order = reordered
+      const isSorted = keptIds.every((id, i) => i === 0 || keptIds[i - 1] < id);
+      if (!isSorted) addLog(m, 'Reordered production steps');
+      m.instructions = piWork.map(e => ({ step: e.step, text: e.text }));
     }
 
     // center stone pairs (compare as sets of shape@carat)
