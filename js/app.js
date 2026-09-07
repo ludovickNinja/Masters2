@@ -537,6 +537,101 @@
     { key: 'confWeightKarat', label: 'Confirmed Weight Karat', elId: 'fConfWeightKarat' }
   ];
 
+  // ---- Production instruction entries (steps from Options Administration) ----
+  const piList = document.getElementById('piList');
+  const piAddSelect = document.getElementById('piAddSelect');
+  const piAddBtn = document.getElementById('piAddBtn');
+  let piWork = [];   // [{ step, text }]
+
+  function refreshPiAddSelect() {
+    const present = piWork.map(e => e.step);
+    const available = OPTION_CONFIG.productionSteps.filter(s => !present.includes(s));
+    piAddSelect.innerHTML = '';
+    if (!available.length) {
+      const o = document.createElement('option');
+      o.textContent = 'All steps added';
+      piAddSelect.appendChild(o);
+    } else {
+      available.forEach(step => {
+        const o = document.createElement('option');
+        o.value = step;
+        o.textContent = step;
+        piAddSelect.appendChild(o);
+      });
+    }
+    piAddSelect.disabled = !available.length;
+    piAddBtn.disabled = !available.length;
+  }
+
+  function renderPiList() {
+    piList.innerHTML = '';
+    piWork.forEach((entry, index) => {
+      const row = document.createElement('div');
+      row.className = 'form-row';
+
+      const header = document.createElement('div');
+      header.className = 'pi-entry-header';
+      const label = document.createElement('label');
+      label.className = 'field-label';
+      label.textContent = entry.step + ':';
+      header.appendChild(label);
+
+      const controls = document.createElement('span');
+      controls.className = 'pi-controls';
+
+      // reorder: move the step up / down in the sequence
+      [['▲', -1, index === 0], ['▼', 1, index === piWork.length - 1]]
+        .forEach(([arrow, delta, disabled]) => {
+          const move = document.createElement('a');
+          move.href = '#';
+          move.className = 'pi-move' + (disabled ? ' disabled' : '');
+          move.textContent = arrow;
+          move.title = delta < 0 ? 'Move up' : 'Move down';
+          if (!disabled) {
+            move.addEventListener('click', e => {
+              e.preventDefault();
+              piWork.splice(index, 1);
+              piWork.splice(index + delta, 0, entry);
+              renderPiList();
+            });
+          }
+          controls.appendChild(move);
+        });
+
+      const remove = document.createElement('a');
+      remove.href = '#';
+      remove.className = 'pi-remove';
+      remove.textContent = 'remove';
+      remove.addEventListener('click', e => {
+        e.preventDefault();
+        if (entry.text.trim() &&
+            !confirm(`Remove production step "${entry.step}" and its instructions?`)) return;
+        piWork = piWork.filter(x => x !== entry);
+        renderPiList();
+        refreshPiAddSelect();
+      });
+      controls.appendChild(remove);
+      header.appendChild(controls);
+      row.appendChild(header);
+
+      const textarea = document.createElement('textarea');
+      textarea.className = 'text-area';
+      textarea.value = entry.text;
+      textarea.addEventListener('input', () => { entry.text = textarea.value; });
+      row.appendChild(textarea);
+
+      piList.appendChild(row);
+    });
+  }
+
+  piAddBtn.addEventListener('click', () => {
+    const step = piAddSelect.value;
+    if (!step) return;
+    piWork.push({ step, text: '' });
+    renderPiList();
+    refreshPiAddSelect();
+  });
+
   // ---- Center Stone pairs (shape + the carat size it was made for) ----
   const csShapeSelect = document.getElementById('csShapeSelect');
   const csCaratSelect = document.getElementById('csCaratSelect');
@@ -750,10 +845,9 @@
     productTypeSelect.value = master.productType || '';
     updateSpecCategoryVisibility();
     document.getElementById('fJobBagMessage').value = master.jobBagMessage;
-    document.getElementById('fBnz').value = master.bnz;
-    document.getElementById('fPsx').value = master.psx;
-    document.getElementById('fFiveAtWork').value = master.fiveAtWork;
-    document.getElementById('fKutez').value = master.kutez;
+    piWork = (master.instructions || []).map(e => ({ ...e }));
+    renderPiList();
+    refreshPiAddSelect();
     document.getElementById('fSpecialInfo').value = master.specialInfo;
     refreshKaratSelects();
     SPEC_FIELDS.forEach(f => {
@@ -827,10 +921,6 @@
       { key: 'templateId',      label: 'Template ID',        value: document.getElementById('fTemplateId').value },
       { key: 'productType',     label: 'Product Type',       value: productTypeSelect.value },
       { key: 'jobBagMessage',   label: 'Job Bag message',    value: document.getElementById('fJobBagMessage').value },
-      { key: 'bnz',             label: 'BNZ',                value: document.getElementById('fBnz').value },
-      { key: 'psx',             label: 'PSX',                value: document.getElementById('fPsx').value },
-      { key: 'fiveAtWork',      label: '5 @ Work',           value: document.getElementById('fFiveAtWork').value },
-      { key: 'kutez',           label: 'Kutez',              value: document.getElementById('fKutez').value },
       { key: 'specialInfo',     label: 'Special Info',       value: document.getElementById('fSpecialInfo').value }
     ];
     const changed = [];
@@ -858,6 +948,27 @@
         }
       }
     });
+    // production instruction entries: log added/removed steps, diff texts
+    {
+      const oldSteps = (m.instructions || []).map(e => e.step);
+      const newSteps = piWork.map(e => e.step);
+      piWork.forEach(e => {
+        if (!oldSteps.includes(e.step)) addLog(m, `Added production step: ${e.step}`);
+      });
+      (m.instructions || []).forEach(e => {
+        if (!newSteps.includes(e.step)) addLog(m, `Removed production step: ${e.step}`);
+      });
+      piWork.forEach(e => {
+        const old = (m.instructions || []).find(o => o.step === e.step);
+        if (old && old.text !== e.text) changed.push(e.step);
+      });
+      // order change of the steps present in both versions
+      const oldCommon = oldSteps.filter(s => newSteps.includes(s)).join('|');
+      const newCommon = newSteps.filter(s => oldSteps.includes(s)).join('|');
+      if (oldCommon !== newCommon) addLog(m, 'Reordered production steps');
+      m.instructions = piWork.map(e => ({ ...e }));
+    }
+
     // center stone pairs (compare as sets of shape@carat)
     {
       const key = p => `${p.shape}@${p.carat}`;
@@ -992,7 +1103,9 @@
   });
 
   // chip list + add box for one editable value list (used per category)
-  function buildOptionListEditor(values, listLabel, addPlaceholder) {
+  // opts: rerender (defaults to renderCategoryLists), confirmMessage(opt)
+  function buildOptionListEditor(values, listLabel, addPlaceholder, opts = {}) {
+    const rerender = opts.rerender || renderCategoryLists;
     const wrap = document.createElement('div');
 
     const chips = document.createElement('div');
@@ -1008,9 +1121,12 @@
       x.title = `Remove "${opt}"`;
       x.addEventListener('click', e => {
         e.preventDefault();
-        if (!confirm(`Remove option "${opt}" from ${listLabel}?`)) return;
+        const message = opts.confirmMessage
+          ? opts.confirmMessage(opt)
+          : `Remove option "${opt}" from ${listLabel}?`;
+        if (!confirm(message)) return;
         values.splice(values.indexOf(opt), 1);
-        renderCategoryLists();
+        rerender();
       });
       chip.appendChild(x);
       chips.appendChild(chip);
@@ -1036,7 +1152,7 @@
       }
       values.push(value);
       input.value = '';
-      renderCategoryLists();
+      rerender();
     }
     btn.addEventListener('click', addOption);
     input.addEventListener('keydown', e => {
@@ -1047,6 +1163,25 @@
     wrap.appendChild(addRow);
 
     return wrap;
+  }
+
+  function renderProductionStepsAdmin() {
+    const container = document.getElementById('productionStepsAdmin');
+    container.innerHTML = '';
+    const block = document.createElement('div');
+    block.className = 'option-admin-block';
+    block.appendChild(buildOptionListEditor(
+      OPTION_CONFIG.productionSteps, 'Production Steps', 'Add production step...', {
+        rerender: renderProductionStepsAdmin,
+        confirmMessage: step => {
+          const inUse = MASTERS.filter(m =>
+            (m.instructions || []).some(e => e.step === step)).length;
+          return inUse
+            ? `"${step}" is used on ${inUse} master(s). Remove it from the step list anyway? Existing entries are kept.`
+            : `Remove production step "${step}"?`;
+        }
+      }));
+    container.appendChild(block);
   }
 
   function renderCategoryLists() {
@@ -1154,6 +1289,7 @@
 
   function openOptionsModal() {
     renderPtMatrix();
+    renderProductionStepsAdmin();
     renderCategoryLists();
     renderVendorAdmin();
     optionsModal.hidden = false;

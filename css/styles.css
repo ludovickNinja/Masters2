@@ -574,3 +574,24 @@ select.karat-select { width: 90px; }
   padding-top: 12px;
 }
 .modal-log .log-table { width: 100%; min-width: 0; }
+
+/* ===== Production instruction entries ===== */
+.pi-entry-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.pi-remove { color: #a33; font-size: 11px; text-decoration: none; }
+.pi-remove:hover { text-decoration: underline; }
+.pi-add-row { margin: 4px 0 20px; }
+.pi-add-row select { width: 225px; }
+
+/* production step reorder controls */
+.pi-controls { display: flex; gap: 10px; align-items: baseline; }
+.pi-move {
+  color: #555;
+  font-size: 11px;
+  text-decoration: none;
+}
+.pi-move:hover { color: #000; }
+.pi-move.disabled { color: #ccc; cursor: default; }

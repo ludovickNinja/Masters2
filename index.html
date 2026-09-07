@@ -137,24 +137,11 @@
             <input type="text" id="fJobBagMessage" class="text-input" placeholder="Some message here...">
           </div>
 
-          <div class="form-row">
-            <label class="field-label" for="fBnz">BNZ:</label>
-            <textarea id="fBnz" class="text-area"></textarea>
-          </div>
-
-          <div class="form-row">
-            <label class="field-label" for="fPsx">PSX:</label>
-            <textarea id="fPsx" class="text-area"></textarea>
-          </div>
-
-          <div class="form-row">
-            <label class="field-label" for="fFiveAtWork">5 @ Work:</label>
-            <textarea id="fFiveAtWork" class="text-area"></textarea>
-          </div>
-
-          <div class="form-row">
-            <label class="field-label" for="fKutez">Kutez:</label>
-            <textarea id="fKutez" class="text-area"></textarea>
+          <!-- production step entries (list controlled in Options Administration) -->
+          <div id="piList"></div>
+          <div class="options-add-row pi-add-row">
+            <select id="piAddSelect" class="text-input"></select>
+            <button type="button" class="btn btn-dark" id="piAddBtn">Add Production Instructions</button>
           </div>
 
           <div class="form-row">
@@ -291,6 +278,11 @@
         <input type="text" id="newPtName" class="text-input" placeholder="New product type name...">
         <button type="button" class="btn btn-primary" id="addPtBtn">Add Product Type</button>
       </div>
+
+      <div class="spec-section-title">Production Steps</div>
+      <p class="options-intro">The production instruction entries that can be added to a
+        master (Production Instructions tab of the detailed view).</p>
+      <div id="productionStepsAdmin"></div>
 
       <div class="spec-section-title">Attribute Selection Box Options</div>
       <div id="categoryOptionLists"></div>
