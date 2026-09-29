@@ -161,6 +161,7 @@ function makeMaster(id, status, products, log) {
     fiveAtWork: '',
     kutez: '',
     specialInfo: '',
+    setters: '',
     // design specifications (empty until filled in);
     // attribute categories are arrays - a design can have several values each
     specs: {
@@ -169,7 +170,8 @@ function makeMaster(id, status, products, log) {
       style: [], finishing: [], profile: [], headType: [], shankType: [],
       centerStones: [],   // [{ shape, carat }] - shape + the size it was made for
       estWeight: '', estWeightKarat: '',
-      confWeight: '', confWeightKarat: ''
+      confWeight: '', confWeightKarat: '',
+      refFingerSize: ''
     },
     // linked vendors: { name, sku, specSheet, notes }
     // empty = made in house; multiple vendors allowed

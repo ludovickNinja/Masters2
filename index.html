@@ -110,15 +110,15 @@
             <select id="fProductType" class="text-input">
               <!-- options come from OPTION_CONFIG (Options Administration) -->
             </select>
-            <div class="file-row">
-              <input type="file" id="fTemplateFile">
-            </div>
           </div>
           <div class="form-split-right">
-            <div class="jobbag-preview" id="jobBagPreview"></div>
-            <a href="#" class="delete-link" id="jobBagDeleteLink">delete</a>
-            <div class="file-row">
-              <input type="file" id="fJobBagFile">
+            <div class="file-row file-row-pair">
+              <div class="jobbag-col">
+                <div class="jobbag-preview" id="jobBagPreview"></div>
+                <a href="#" class="delete-link" id="jobBagDeleteLink">delete</a>
+                <input type="file" id="fJobBagFile">
+              </div>
+              <input type="file" id="fTemplateFile">
             </div>
           </div>
         </div>
@@ -160,6 +160,11 @@
           <div class="form-row">
             <label class="field-label" for="fSpecialInfo">Special Info:</label>
             <textarea id="fSpecialInfo" class="text-area"></textarea>
+          </div>
+
+          <div class="form-row">
+            <label class="field-label" for="fSetters">Setters:</label>
+            <textarea id="fSetters" class="text-area"></textarea>
           </div>
         </div>
 
@@ -242,6 +247,10 @@
                 <input type="number" step="0.01" min="0" id="fConfWeight" class="text-input spec-input">
                 <select id="fConfWeightKarat" class="text-input karat-select"></select>
               </div>
+            </div>
+            <div class="form-row" style="grid-column: 2;">
+              <label class="field-label" for="fRefFingerSize">Reference Finger Size:</label>
+              <input type="text" id="fRefFingerSize" class="text-input spec-input">
             </div>
           </div>
 

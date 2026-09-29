@@ -534,7 +534,8 @@
     { key: 'estWeight',       label: 'Estimated Weight',   elId: 'fEstWeight' },
     { key: 'estWeightKarat',  label: 'Estimated Weight Karat', elId: 'fEstWeightKarat' },
     { key: 'confWeight',      label: 'Confirmed Weight',   elId: 'fConfWeight' },
-    { key: 'confWeightKarat', label: 'Confirmed Weight Karat', elId: 'fConfWeightKarat' }
+    { key: 'confWeightKarat', label: 'Confirmed Weight Karat', elId: 'fConfWeightKarat' },
+    { key: 'refFingerSize',   label: 'Reference Finger Size', elId: 'fRefFingerSize' }
   ];
 
   // ---- Center Stone pairs (shape + the carat size it was made for) ----
@@ -755,6 +756,7 @@
     document.getElementById('fFiveAtWork').value = master.fiveAtWork;
     document.getElementById('fKutez').value = master.kutez;
     document.getElementById('fSpecialInfo').value = master.specialInfo;
+    document.getElementById('fSetters').value = master.setters || '';
     refreshKaratSelects();
     SPEC_FIELDS.forEach(f => {
       if (f.type === 'multi') multiSelects[f.elId].set(master.specs[f.key]);
@@ -831,7 +833,8 @@
       { key: 'psx',             label: 'PSX',                value: document.getElementById('fPsx').value },
       { key: 'fiveAtWork',      label: '5 @ Work',           value: document.getElementById('fFiveAtWork').value },
       { key: 'kutez',           label: 'Kutez',              value: document.getElementById('fKutez').value },
-      { key: 'specialInfo',     label: 'Special Info',       value: document.getElementById('fSpecialInfo').value }
+      { key: 'specialInfo',     label: 'Special Info',       value: document.getElementById('fSpecialInfo').value },
+      { key: 'setters',         label: 'Setters',            value: document.getElementById('fSetters').value }
     ];
     const changed = [];
     fields.forEach(f => {
