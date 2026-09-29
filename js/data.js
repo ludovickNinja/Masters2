@@ -165,6 +165,7 @@ function makeMaster(id, status, products, log) {
     // more can be added from the configured production step list
     instructions: OPTION_CONFIG.defaultProductionSteps.map(step => ({ step, text: '' })),
     specialInfo: '',
+    setters: '',
     // design specifications (empty until filled in);
     // attribute categories are arrays - a design can have several values each
     specs: {
@@ -173,7 +174,8 @@ function makeMaster(id, status, products, log) {
       style: [], finishing: [], profile: [], headType: [], shankType: [],
       centerStones: [],   // [{ shape, carat }] - shape + the size it was made for
       estWeight: '', estWeightKarat: '',
-      confWeight: '', confWeightKarat: ''
+      confWeight: '', confWeightKarat: '',
+      refFingerSize: ''
     },
     // linked vendors: { name, sku, specSheet, notes }
     // empty = made in house; multiple vendors allowed
@@ -360,7 +362,8 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
         estWeight: est.toFixed(2),
         estWeightKarat: pick(['14K', '14K', '14K', '10K', '18K', '925']),
         confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : '',
-        confWeightKarat: ''
+        confWeightKarat: '',
+        refFingerSize: ''
       };
       if (master.specs.confWeight) master.specs.confWeightKarat = master.specs.estWeightKarat;
     }
