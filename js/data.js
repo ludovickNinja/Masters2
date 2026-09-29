@@ -57,9 +57,9 @@ const OPTION_CONFIG = {
   ],
   // production steps available in the Production Instructions tab;
   // a master starts with the default steps and more can be added
-  productionSteps: ['BNZ', 'PSX', '5 @ Work', 'Kutez', 'Setter', 'Jeweller',
+  productionSteps: ['BNZ', 'PSX', '5 @ Work', 'Kutez', 'Setters', 'Jeweller',
                     'CAD', 'Polishing', 'Lab', 'QC', 'Laser'],
-  defaultProductionSteps: ['BNZ', 'PSX', '5 @ Work', 'Kutez'],
+  defaultProductionSteps: ['BNZ', 'PSX', '5 @ Work', 'Kutez', 'Setters'],
   // karat/material options for weights (capture only here; material
   // conversion is handled by a different module)
   materials: ['925', '10K', '14K', '18K', 'PT950', 'PD950', '18PD'],
@@ -165,7 +165,6 @@ function makeMaster(id, status, products, log) {
     // more can be added from the configured production step list
     instructions: OPTION_CONFIG.defaultProductionSteps.map(step => ({ step, text: '' })),
     specialInfo: '',
-    setters: '',
     // design specifications (empty until filled in);
     // attribute categories are arrays - a design can have several values each
     specs: {
