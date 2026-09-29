@@ -855,7 +855,6 @@
     renderPiList();
     refreshPiAddSelect();
     document.getElementById('fSpecialInfo').value = master.specialInfo;
-    document.getElementById('fSetters').value = master.setters || '';
     refreshKaratSelects();
     SPEC_FIELDS.forEach(f => {
       if (f.type === 'multi') multiSelects[f.elId].set(master.specs[f.key]);
@@ -928,8 +927,7 @@
       { key: 'templateId',      label: 'Template ID',        value: document.getElementById('fTemplateId').value },
       { key: 'productType',     label: 'Product Type',       value: productTypeSelect.value },
       { key: 'jobBagMessage',   label: 'Job Bag message',    value: document.getElementById('fJobBagMessage').value },
-      { key: 'specialInfo',     label: 'Special Info',       value: document.getElementById('fSpecialInfo').value },
-      { key: 'setters',         label: 'Setters',            value: document.getElementById('fSetters').value }
+      { key: 'specialInfo',     label: 'Special Info',       value: document.getElementById('fSpecialInfo').value }
     ];
     const changed = [];
     fields.forEach(f => {
