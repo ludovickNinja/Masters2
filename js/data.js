@@ -358,7 +358,8 @@ Object.assign(MASTERS[2].specs, {  // STA31-2
         estWeight: est.toFixed(2),
         estWeightKarat: pick(['14K', '14K', '14K', '10K', '18K', '925']),
         confWeight: status === 'confirmed' ? (est + (rnd() - 0.5) * 0.6).toFixed(2) : '',
-        confWeightKarat: ''
+        confWeightKarat: '',
+        refFingerSize: ''
       };
       if (master.specs.confWeight) master.specs.confWeightKarat = master.specs.estWeightKarat;
     }
